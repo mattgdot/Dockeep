@@ -1,6 +1,8 @@
 package com.app.dockeep.di
 
 import android.content.Context
+import com.app.dockeep.data.files.FilesRepository
+import com.app.dockeep.data.files.FilesRepositoryImpl
 import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.data.preferences.DataStoreRepositoryImpl
 import dagger.Module
@@ -20,5 +22,12 @@ object AppModule {
     fun provideDataStoreRepository(
         @ApplicationContext app: Context
     ): DataStoreRepository = DataStoreRepositoryImpl(app)
+
+
+    @Singleton
+    @Provides
+    fun provideFilesRepository(
+        @ApplicationContext app: Context
+    ): FilesRepository = FilesRepositoryImpl(app)
 
 }
