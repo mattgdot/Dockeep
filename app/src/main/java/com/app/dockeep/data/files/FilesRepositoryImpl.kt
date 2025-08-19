@@ -28,7 +28,11 @@ class FilesRepositoryImpl @Inject constructor(
         val targetDir = if(isRoot) DocumentFile.fromTreeUri(context, folderUri)?.findFile(FILES_DIR) else DocumentFile.fromTreeUri(context, folderUri)
 
         for (uri in files) {
-            persistUriPermissions(uri)
+            try {
+                persistUriPermissions(uri)
+            } catch(e: Exception){
+
+            }
 
             var displayName = UNK_FILE
             var mimeType: String? = null

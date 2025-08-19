@@ -52,11 +52,16 @@ class MainViewModel @Inject constructor(
     fun loadFiles(uri: String) {
         viewModelScope.launch {
             var isRoot = false
-            val folderUri = uri.ifBlank {
+
+            if(uri.isBlank() || uri == getContentPathUri()){
                 isRoot = true
+            }
+            val folderUri = uri.ifBlank {
                 getContentPathUri()!!
             }.toUri()
-            files.value = filesRepo.listFilesInDirectory(folderUri, isRoot).toList()
+            files.value = filesRepo.listFilesInDirectory(folderUri, isRoot).toList().sortedBy {
+                !it.isFolder
+            }
         }
     }
 
@@ -82,6 +87,31 @@ class MainViewModel @Inject constructor(
                     loadFiles(dir)
                 }
             }
+        }
+    }
+
+    fun importFiles(intent: Intent, folderUri: String) {
+        viewModelScope.launch {
+
+            val uriList = mutableListOf<Uri>()
+            var isRoot = false
+
+            for (i in 0..((intent.clipData?.itemCount?.minus(1))
+                ?: 0)) {
+                intent.clipData?.getItemAt(i)?.uri?.let { uri ->
+                    uriList.add(
+                        uri
+                    )
+                }
+                intent.data?.let { uri -> uriList.add(uri) }
+            }
+
+            val dir = folderUri.ifBlank {
+                isRoot = true
+                getContentPathUri()!!
+            }
+
+            filesRepo.copyFilesToFolder(dir.toUri(), uriList, isRoot)
         }
     }
 }
