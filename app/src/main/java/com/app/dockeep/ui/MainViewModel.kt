@@ -24,6 +24,13 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     var files = mutableStateOf(listOf<DocumentItem>())
+    var folders = mutableStateOf(listOf<Pair<String, Uri>>())
+
+    init {
+        viewModelScope.launch {
+            folders.value = filesRepo.listAllDirectories(getContentPathUri()!!.toUri())
+        }
+    }
 
     val openFileIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
@@ -41,9 +48,9 @@ class MainViewModel @Inject constructor(
             val uri = result.data?.data
             if (uri != null) {
                 viewModelScope.launch {
-                    prefRepo.putString(CONTENT_PATH_KEY, uri.toString())
-                    filesRepo.persistUriPermissions(uri)
-                    loadFiles(uri.toString())
+                    val rootUri = filesRepo.setRootLocation(uri)
+                    loadFiles(rootUri.toString())
+                    prefRepo.putString(CONTENT_PATH_KEY, rootUri.toString())
                 }
             }
         }
@@ -51,15 +58,10 @@ class MainViewModel @Inject constructor(
 
     fun loadFiles(uri: String) {
         viewModelScope.launch {
-            var isRoot = false
-
-            if(uri.isBlank() || uri == getContentPathUri()){
-                isRoot = true
-            }
             val folderUri = uri.ifBlank {
                 getContentPathUri()!!
             }.toUri()
-            files.value = filesRepo.listFilesInDirectory(folderUri, isRoot).toList().sortedBy {
+            files.value = filesRepo.listFilesInDirectory(folderUri).toList().sortedBy { it.name }.sortedBy {
                 !it.isFolder
             }
         }
@@ -70,7 +72,6 @@ class MainViewModel @Inject constructor(
             if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.let {
                     val uriList = mutableListOf<Uri>()
-                    var isRoot = false
 
                     for (i in 0..((it.clipData?.itemCount?.minus(1)) ?: 0)) {
                         it.clipData?.getItemAt(i)?.uri?.let { uri -> uriList.add(uri) }
@@ -78,11 +79,10 @@ class MainViewModel @Inject constructor(
                     }
 
                     val dir = folderUri.ifBlank {
-                        isRoot = true
                         getContentPathUri()!!
                     }
 
-                    filesRepo.copyFilesToFolder(dir.toUri(), uriList, isRoot)
+                    filesRepo.copyFilesToFolder(dir.toUri(), uriList)
 
                     loadFiles(dir)
                 }
@@ -90,11 +90,20 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun createFolder(parent:String, name: String){
+        viewModelScope.launch {
+            val dir = parent.ifBlank {
+                getContentPathUri()!!
+            }
+            filesRepo.createDirectory(dir.toUri(), name)
+            loadFiles(dir)
+        }
+    }
+
     fun importFiles(intent: Intent, folderUri: String) {
         viewModelScope.launch {
 
             val uriList = mutableListOf<Uri>()
-            var isRoot = false
 
             for (i in 0..((intent.clipData?.itemCount?.minus(1))
                 ?: 0)) {
@@ -107,11 +116,10 @@ class MainViewModel @Inject constructor(
             }
 
             val dir = folderUri.ifBlank {
-                isRoot = true
                 getContentPathUri()!!
             }
 
-            filesRepo.copyFilesToFolder(dir.toUri(), uriList, isRoot)
+            filesRepo.copyFilesToFolder(dir.toUri(), uriList)
         }
     }
 }

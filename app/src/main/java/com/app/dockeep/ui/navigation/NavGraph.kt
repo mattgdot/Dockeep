@@ -29,6 +29,7 @@ fun NavGraph(navController: NavHostController) {
                             .replace('%', '|')
                     )
                     navController.navigate("$FILES_ROUTE/${path}/${encodedUri}")
+
                 },
                 navController = navController,
             )

@@ -32,6 +32,10 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +68,8 @@ fun FilesScreen(
         }
 
     val scrollBehaviour = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    var showCreateFolderDialog by rememberSaveable { mutableStateOf(false) }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehaviour.nestedScrollConnection),
         floatingActionButton = {
@@ -73,82 +79,104 @@ fun FilesScreen(
         },
         topBar = {
             FilesTopBar(
-                title = path, displayBackIcon = navController.previousBackStackEntry != null,
-                scrollBehaviour = scrollBehaviour
-            ) {
+                title = path,
+                displayBackIcon = navController.previousBackStackEntry != null,
+                scrollBehaviour = scrollBehaviour,
+                onCreateFolder = {
+                    showCreateFolderDialog = true
+                }) {
                 navController.popBackStack()
             }
         },
 
         ) { innerPadding ->
 
-            val filesList by mainVM.files
+        val filesList by mainVM.files
 
-            BackHandler {
-                navController.popBackStack()
+        BackHandler(navController.previousBackStackEntry != null ) {
+            navController.popBackStack()
+            println("back")
+        }
+
+        LaunchedEffect(key1 = Unit) {
+            if (mainVM.getContentPathUri().isNullOrBlank()) {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                contentPathLauncher.launch(intent)
+            } else {
+                mainVM.loadFiles(uri)
             }
+        }
 
-            LaunchedEffect(key1 = Unit) {
-                if (mainVM.getContentPathUri().isNullOrBlank()) {
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-                    contentPathLauncher.launch(intent)
-                } else {
-                    mainVM.loadFiles(uri)
-                }
-            }
+        if (showCreateFolderDialog) {
+            CreateFolderDialog(
+                onDismiss = {
+                    showCreateFolderDialog = false
+                },
+                onConfirm = {
+                    mainVM.createFolder(
+                        uri, it
+                    )
+                    showCreateFolderDialog = false
+                },
+            )
+        }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = innerPadding
-            ) {
-                items(filesList) { item ->
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                item.name, overflow = TextOverflow.Ellipsis, maxLines = 1, fontWeight = if(item.isFolder) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                if (item.isFolder) "Folder" else item.mimeType,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1
-                            )
-                        },
-                        trailingContent = {
-                            IconButton(
-                                onClick = {}) {
-                                Icon(Icons.Default.MoreVert, null)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(), contentPadding = innerPadding
+        ) {
+            items(filesList) { item ->
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            item.name,
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                            fontWeight = if (item.isFolder) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            if (item.isFolder) "Folder" else item.mimeType,
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1
+                        )
+                    },
+                    trailingContent = {
+                        IconButton(
+                            onClick = {}) {
+                            Icon(Icons.Default.MoreVert, null)
+                        }
+                    },
+                    leadingContent = {
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (item.isFolder) {
+                                Icon(
+                                    Icons.Default.Folder,
+                                    contentDescription = null,
+                                )
+                            } else {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.InsertDriveFile,
+                                    contentDescription = null,
+                                )
                             }
-                        },
-                        leadingContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                if (item.isFolder) {
-                                    Icon(
-                                        Icons.Default.Folder,
-                                        contentDescription = null,
-                                    )
-                                } else {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.InsertDriveFile,
-                                        contentDescription = null,
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier.padding(vertical = 5.dp).clickable {
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(vertical = 5.dp)
+                        .clickable {
                             if (item.isFolder) {
                                 onNavigate(item.uri.toString(), item.name)
                             }
                         },
-                    )
-                }
+                )
+            }
         }
     }
 }
