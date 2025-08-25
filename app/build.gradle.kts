@@ -21,6 +21,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    val keystoreFilePath = project.findProperty("android.injected.signing.store.file") as String?
+    signingConfigs {
+        create("release") {
+            if (!keystoreFilePath.isNullOrEmpty()) {
+                storeFile = file(keystoreFilePath)
+                storePassword = project.findProperty("android.injected.signing.store.password") as String? ?: ""
+                keyAlias = project.findProperty("android.injected.signing.key.alias") as String? ?: ""
+                keyPassword = project.findProperty("android.injected.signing.key.password") as String? ?: ""
+            }
+        }
+    }
 
     buildTypes {
         release {
