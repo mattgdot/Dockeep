@@ -21,15 +21,21 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    val keystoreFilePath = project.findProperty("android.injected.signing.store.file") as String?
+
     signingConfigs {
         create("release") {
-            if (!keystoreFilePath.isNullOrEmpty()) {
-                storeFile = file(keystoreFilePath)
-                storePassword = project.findProperty("android.injected.signing.store.password") as String? ?: ""
-                keyAlias = project.findProperty("android.injected.signing.key.alias") as String? ?: ""
-                keyPassword = project.findProperty("android.injected.signing.key.password") as String? ?: ""
+            val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+            val allFilesFromDir = File(tmpFilePath).listFiles()
+
+            if (allFilesFromDir != null && allFilesFromDir.isNotEmpty()) {
+                val keystoreFile = allFilesFromDir.first()
+                keystoreFile.renameTo(File("keystore/your_keystore.jks"))
             }
+
+            storeFile = file("keystore/your_keystore.jks")
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
         }
     }
 
