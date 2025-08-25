@@ -5,12 +5,13 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
+import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.documentfile.provider.DocumentFile
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.FILES_DIR
 import com.app.dockeep.utils.Constants.OCTET_STREAM
-import com.app.dockeep.utils.Constants.UNK_FILE
+import com.app.dockeep.utils.Constants.UNK
 import javax.inject.Inject
 
 class FilesRepositoryImpl @Inject constructor(
@@ -32,14 +33,16 @@ class FilesRepositoryImpl @Inject constructor(
     override suspend fun copyFilesToFolder(
         folderUri: Uri, files: List<Uri>
     ) {
-        val targetDir = DocumentFile.fromTreeUri(context, folderUri)
+        val targetDir = DocumentFile.fromTreeUri(context, folderUri) ?: return
 
         for (uri in files) {
             try {
                 persistUriPermissions(uri)
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                Log.e("FilesRepository", "Failed to persist URI permission for $uri", e)
+            }
 
-            var displayName = UNK_FILE
+            var displayName = UNK
             var mimeType: String?
 
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -50,6 +53,7 @@ class FilesRepositoryImpl @Inject constructor(
                     }
                 }
             }
+
             mimeType = context.contentResolver.getType(uri)
 
             if (mimeType == null) {
@@ -58,7 +62,7 @@ class FilesRepositoryImpl @Inject constructor(
                     MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: OCTET_STREAM
             }
 
-            val file = targetDir?.createFile(mimeType, displayName)
+            val file = targetDir.createFile(mimeType, displayName)
 
             if (file != null) {
                 context.contentResolver.openInputStream(uri).use { ifs ->
@@ -119,27 +123,41 @@ class FilesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createDirectory(parentUri: Uri, folderName: String): Uri {
-        val targetDir = DocumentFile.fromTreeUri(context, parentUri)
-
-        val dir = targetDir?.findFile(folderName)
-        if (dir == null) targetDir?.createDirectory(folderName)
-
-        return if (targetDir != null) targetDir.findFile(folderName)?.uri
-            ?: Uri.EMPTY else Uri.EMPTY
+        val targetDir = DocumentFile.fromTreeUri(context, parentUri) ?: return Uri.EMPTY
+        val dir = targetDir.findFile(folderName) ?: targetDir.createDirectory(folderName)
+        return dir?.uri ?: Uri.EMPTY
     }
 
-    override suspend fun listAllDirectories(root: Uri): List<Pair<String, Uri>> {
-        val targetDir = DocumentFile.fromTreeUri(context, root)
-        val list = mutableListOf<Pair<String,Uri>>()
+    override suspend fun listAllDirectories(root: Uri, parent: String): List<Pair<String, Uri>> {
+        val targetDir = DocumentFile.fromTreeUri(context, root) ?: return emptyList()
+        val result = mutableListOf<Pair<String, Uri>>()
 
-        targetDir?.let{
-            for(file in it.listFiles()) {
-                if(file.isDirectory) {
-                    list.add(Pair(file.name!!, file.uri, ))
-                }
-            }
+        val fileName = if (parent.isEmpty()) targetDir.name ?: UNK else "$parent/${targetDir.name ?: UNK}"
+
+        if (targetDir.isDirectory) {
+            result.add(fileName to targetDir.uri)
         }
 
-        return list.toList()
+        targetDir.listFiles()
+            .filter { it.isDirectory }
+            .forEach { dir ->
+                result += listAllDirectories(dir.uri, fileName)
+            }
+
+        return result
+    }
+
+    override suspend fun renameDocument(uri: Uri, name: String) {
+        DocumentsContract.renameDocument(context.contentResolver, uri, name)
+    }
+
+    override suspend fun deleteDocument(uri: Uri) {
+        try {
+            persistUriPermissions(uri)
+        } catch (e: Exception) {
+            Log.e("FilesRepository", "Failed to delete document $uri", e)
+        }
+        val target = DocumentFile.fromSingleUri(context, uri)
+        target?.delete()
     }
 }

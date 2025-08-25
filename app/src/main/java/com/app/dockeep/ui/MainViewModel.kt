@@ -1,125 +1,110 @@
 package com.app.dockeep.ui
 
 import android.app.Activity
+import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.dockeep.data.files.FilesRepository
 import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
+import com.app.dockeep.utils.Helper.extractUris
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val prefRepo: DataStoreRepository,
     private val filesRepo: FilesRepository,
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
 
     var files = mutableStateOf(listOf<DocumentItem>())
     var folders = mutableStateOf(listOf<Pair<String, Uri>>())
 
     init {
         viewModelScope.launch {
-            folders.value = filesRepo.listAllDirectories(getContentPathUri()!!.toUri())
+            getContentPathUri()?.let { uri ->
+                folders.value = filesRepo.listAllDirectories(uri.toUri())
+            }
         }
     }
 
-    val openFileIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-        addCategory(Intent.CATEGORY_OPENABLE)
-        addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        setType("*/*")
-    }
+    suspend fun getContentPathUri(): String? = prefRepo.getString(CONTENT_PATH_KEY)
 
-    fun getContentPathUri(): String? = runBlocking { prefRepo.getString(CONTENT_PATH_KEY) }
+    private suspend fun resolveFolderUri(folderUri: String): Uri {
+        val uriString = folderUri.ifBlank {
+            getContentPathUri() ?: ""
+        }
+        return uriString.toUri()
+    }
 
     fun setContentPathUri(result: ActivityResult) {
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data
-            if (uri != null) {
-                viewModelScope.launch {
-                    val rootUri = filesRepo.setRootLocation(uri)
-                    loadFiles(rootUri.toString())
-                    prefRepo.putString(CONTENT_PATH_KEY, rootUri.toString())
-                }
-            }
+        if (result.resultCode != Activity.RESULT_OK) return
+        val uri = result.data?.data ?: return
+
+        viewModelScope.launch {
+            val rootUri = filesRepo.setRootLocation(uri)
+            prefRepo.putString(CONTENT_PATH_KEY, rootUri.toString())
+            loadFiles(rootUri.toString())
         }
     }
 
-    fun loadFiles(uri: String) {
+    fun loadFiles(folderUri: String = "") {
         viewModelScope.launch {
-            val folderUri = uri.ifBlank {
-                getContentPathUri()!!
-            }.toUri()
-            files.value = filesRepo.listFilesInDirectory(folderUri).toList().sortedBy { it.name }.sortedBy {
-                !it.isFolder
-            }
+            val folder = resolveFolderUri(folderUri)
+            files.value = filesRepo.listFilesInDirectory(folder)
+                .sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { it.name })
         }
     }
 
-    fun loadAndCopyFiles(folderUri: String, result: ActivityResult) {
+    fun loadAndCopyFiles(folderUri: String = "", result: ActivityResult) {
+        if (result.resultCode != Activity.RESULT_OK) return
+
         viewModelScope.launch {
-            if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.let {
-                    val uriList = mutableListOf<Uri>()
-
-                    for (i in 0..((it.clipData?.itemCount?.minus(1)) ?: 0)) {
-                        it.clipData?.getItemAt(i)?.uri?.let { uri -> uriList.add(uri) }
-                        it.data?.let { uri -> uriList.add(uri) }
-                    }
-
-                    val dir = folderUri.ifBlank {
-                        getContentPathUri()!!
-                    }
-
-                    filesRepo.copyFilesToFolder(dir.toUri(), uriList)
-
-                    loadFiles(dir)
-                }
-            }
+            val uris = result.data?.extractUris() ?: return@launch
+            val folder = resolveFolderUri(folderUri)
+            filesRepo.copyFilesToFolder(folder, uris)
+            loadFiles(folder.toString())
         }
     }
 
-    fun createFolder(parent:String, name: String){
+    fun createFolder(parent: String = "", name: String) {
         viewModelScope.launch {
-            val dir = parent.ifBlank {
-                getContentPathUri()!!
-            }
-            filesRepo.createDirectory(dir.toUri(), name)
-            loadFiles(dir)
+            val folder = resolveFolderUri(parent)
+            filesRepo.createDirectory(folder, name)
+            loadFiles(folder.toString())
         }
     }
 
-    fun importFiles(intent: Intent, folderUri: String) {
+    fun deleteFile(folder: String = "", doc: Uri) {
         viewModelScope.launch {
+            filesRepo.deleteDocument(doc)
+            loadFiles(folder)
+        }
+    }
 
-            val uriList = mutableListOf<Uri>()
+    fun renameFile(folder: String = "", doc: Uri, name: String) {
+        viewModelScope.launch {
+            filesRepo.renameDocument(doc, name)
+            loadFiles(folder)
+        }
+    }
 
-            for (i in 0..((intent.clipData?.itemCount?.minus(1))
-                ?: 0)) {
-                intent.clipData?.getItemAt(i)?.uri?.let { uri ->
-                    uriList.add(
-                        uri
-                    )
-                }
-                intent.data?.let { uri -> uriList.add(uri) }
-            }
-
-            val dir = folderUri.ifBlank {
-                getContentPathUri()!!
-            }
-
-            filesRepo.copyFilesToFolder(dir.toUri(), uriList)
+    fun importFiles(intent: Intent, folderUri: String = "") {
+        viewModelScope.launch {
+            val uris = intent.extractUris()
+            val folder = resolveFolderUri(folderUri)
+            filesRepo.copyFilesToFolder(folder, uris)
+            Toast.makeText(getApplication(), "Imported successfully", Toast.LENGTH_SHORT).show()
+            loadFiles(folder.toString())
         }
     }
 }

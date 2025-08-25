@@ -17,6 +17,7 @@ fun NavGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = "${FILES_ROUTE}/${FILES_DIR}/") {
         composable("$FILES_ROUTE/{${PATH_ARG}}/{${URI_ARG}}") { navBackStackEntry ->
             val path = navBackStackEntry.arguments?.getString(PATH_ARG).orEmpty()
+
             val uri = navBackStackEntry.arguments?.getString(URI_ARG).orEmpty()
                 .replace('|', '%')
                 .let(Uri::parse)

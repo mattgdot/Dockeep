@@ -1,10 +1,12 @@
-package com.app.dockeep
+package com.app.dockeep.ui.activity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.app.dockeep.ui.Application
+import androidx.navigation.compose.rememberNavController
+import com.app.dockeep.ui.navigation.NavGraph
+import com.app.dockeep.ui.theme.DockeepTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -14,7 +16,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            Application()
+            DockeepTheme {
+                val navController = rememberNavController()
+                NavGraph(navController)
+            }
         }
     }
 }

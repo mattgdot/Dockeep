@@ -9,5 +9,7 @@ interface FilesRepository {
     suspend fun copyFilesToFolder(folderUri: Uri, files: List<Uri>)
     suspend fun listFilesInDirectory(folderUri: Uri): List<DocumentItem>
     suspend fun createDirectory(parentUri: Uri, folderName: String): Uri
-    suspend fun listAllDirectories(root: Uri): List<Pair<String, Uri>>
+    suspend fun listAllDirectories(root: Uri, parent:String=""): List<Pair<String, Uri>>
+    suspend fun renameDocument(uri: Uri, name: String)
+    suspend fun deleteDocument(uri: Uri)
 }

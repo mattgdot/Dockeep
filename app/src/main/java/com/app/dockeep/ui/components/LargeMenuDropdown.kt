@@ -10,17 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,15 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> LargeDropdownMenu(
+fun <T> LargeMenuDropdown(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     label: String,
@@ -78,74 +72,49 @@ fun <T> LargeDropdownMenu(
         ) {}
     }
 
+
     if (expanded) {
-        Dialog(
+        Popup(
             onDismissRequest = { expanded = false },
+            properties = PopupProperties(focusable = true)
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
+                tonalElevation = 8.dp
             ) {
                 val listState = rememberLazyListState()
-                if (selectedIndex > -1) {
-                    LaunchedEffect("ScrollToSelected") {
-                        listState.scrollToItem(index = selectedIndex)
-                    }
+                LaunchedEffect(selectedIndex) {
+                    if (selectedIndex >= 0) listState.scrollToItem(selectedIndex)
                 }
 
-                LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
-                    if (notSetLabel != null) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.medium),
+                    state = listState
+                ) {
+                    notSetLabel?.let {
                         item {
                             LargeDropdownMenuItem(
-                                text = notSetLabel,
+                                text = it,
                                 selected = false,
-                                enabled = false,
-                                onClick = { },
+                                enabled = true,
+                                onClick = {
+                                    expanded = false
+                                }
                             )
                         }
                     }
+
                     itemsIndexed(items) { index, item ->
-                        val selectedItem = index == selectedIndex
-                        drawItem(
-                            item, selectedItem, true
-                        ) {
+                        val isSelected = index == selectedIndex
+                        drawItem(item, isSelected, true) {
                             onItemSelected(index, item)
                             expanded = false
-                        }
-
-                        if (index < items.lastIndex) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun LargeDropdownMenuItem(
-    text: String,
-    selected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val contentColor = when {
-        !enabled -> MaterialTheme.colorScheme.onSurface
-        selected -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-
-    CompositionLocalProvider(LocalContentColor provides contentColor) {
-        Box(modifier = Modifier
-            .clickable(enabled) { onClick() }
-            .fillMaxWidth()
-            .padding(15.dp)) {
-            Text(
-                text = text,
-                fontSize = TextUnit(18f, TextUnitType.Sp),
-                fontWeight = FontWeight.W500,
-                style = MaterialTheme.typography.titleLarge,
-            )
         }
     }
 }

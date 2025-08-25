@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Dockeep">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.activity.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Dockeep">
             <intent-filter>
@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ShareReceiverActivity"
+            android:name=".ui.activity.ShareReceiverActivity"
             android:launchMode="singleTop"
             android:excludeFromRecents="true"
             android:finishOnTaskLaunch="true"

@@ -1,4 +1,4 @@
-package com.app.dockeep.ui.screens.files
+package com.app.dockeep.ui.screens.files.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
