@@ -2,30 +2,42 @@ name: Android Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: r0adkll/sign-android-release@v1
-        name: Sign app APK
-        # ID used to access action output
-        id: sign_app
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Decode keystore
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > app/release.jks
         env:
-          # override default build-tools version (33.0.0) -- optional
-          BUILD_TOOLS_VERSION: "34.0.0"
-    
-      # Example use of `signedReleaseFile` output -- not needed
-      - uses: actions/upload-artifact@v2
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build release APK
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=app/release.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload artifact to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: Signed app bundle
-          path: ${{steps.sign_app.outputs.signedReleaseFile}}
+          files: app/build/outputs/apk/release/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
