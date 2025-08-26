@@ -13,11 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Decode Keystore
-        id: decode_keystore
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: 'app/your_keystore.jks'
-          encodedString: ${{ secrets.KEYSTORE }}
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+        run: echo $KEYSTORE | base64 -d > app/your_keystore.jks
           
       - name: Set up JDK 
         uses: actions/setup-java@v4 
