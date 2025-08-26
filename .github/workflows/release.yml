@@ -16,7 +16,8 @@ jobs:
         env:
           KEYSTORE: ${{ secrets.KEYSTORE }}
         run: echo $KEYSTORE | base64 -d > app/your_keystore.jks
-          
+      - name: Verify keystore exists
+        run: ls -la app
       - name: Set up JDK 
         uses: actions/setup-java@v4 
         with:
