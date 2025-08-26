@@ -11,17 +11,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - name: Decode Keystore
         id: decode_keystore
         uses: timheuer/base64-to-file@v1
         with:
           fileName: 'app/your_keystore.jks'
           encodedString: ${{ secrets.KEYSTORE }}
-
-      - name: Verify keystore exists
-        run: ls -la app
           
-      - uses: actions/checkout@v2
       - name: Set up JDK 
         uses: actions/setup-java@v4 
         with:
