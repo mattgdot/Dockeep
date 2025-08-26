@@ -19,10 +19,7 @@ jobs:
           encodedString: ${{ secrets.KEYSTORE }}
 
       - name: Verify keystore exists
-        run: |
-          pwd
-          ls -la
-          ls -la app
+        run: ls -la app
           
       - uses: actions/checkout@v2
       - name: Set up JDK 
