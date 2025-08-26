@@ -5,39 +5,37 @@ on:
     tags:
       - "v*"
 
-  workflow_dispatch:    
-
-permissions:
-  contents: write  
+  workflow_dispatch:      
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: temurin
-          cache: gradle
-
+      - uses: actions/checkout@v3
       - name: Decode Keystore
-        env:
-          KEYSTORE: ${{ secrets.KEYSTORE }}
-        run: echo $KEYSTORE | base64 -d > app/your_keystore.jks
-
-      - name: Build Release
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'app/your_keystore.jks'
+          encodedString: ${{ secrets.KEYSTORE }}
+          
+      - name: Set up JDK 
+        uses: actions/setup-java@v4 
+        with:
+          distribution: 'temurin' 
+          java-version: '17'
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: build prod
         run: ./gradlew assembleRelease
-        working-directory: ./app
         env:
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: app-release
-          path: app/build/outputs/apk/release/*.apk
+          files: app/build/outputs/apk/release/*.apk 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
