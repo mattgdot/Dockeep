@@ -107,7 +107,7 @@ fun FilesScreen(
         }
 
         LaunchedEffect(lifecycleState) {
-            if (lifecycleState == Lifecycle.State.RESUMED) mainVM.loadFiles(uri)
+            if (lifecycleState == Lifecycle.State.RESUMED && !mainVM.getContentPathUri().isNullOrBlank()) mainVM.loadFiles(uri)
         }
 
         if(showConfirmDelete) {
