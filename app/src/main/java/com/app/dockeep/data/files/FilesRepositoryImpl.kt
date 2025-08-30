@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
+import androidx.core.database.getLongOrNull
 import androidx.documentfile.provider.DocumentFile
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.FILES_DIR
@@ -92,17 +93,25 @@ class FilesRepositoryImpl @Inject constructor(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_SIZE, // Add OpenableColumns.SIZE to your projection
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED // Add COLUMN_LAST_MODIFIED
         )
+
+        if(!pathExists(targetDir.uri)) return emptyList()
 
         contentResolver.query(childrenUri, projection, null, null, null)?.use { cursor ->
             val docIdIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
             val nameIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
             val mimeTypeIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE)
+            val size = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
+            val date = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
 
             while (cursor.moveToNext()) {
                 val docId = cursor.getString(docIdIndex)
                 val displayName = cursor.getString(nameIndex)
                 val mimeType = cursor.getString(mimeTypeIndex)
+                val size = cursor.getLongOrNull(size)
+                val date = cursor.getLongOrNull(date)
 
                 val docUri = DocumentsContract.buildDocumentUriUsingTree(
                     targetDir.uri, docId
@@ -114,7 +123,9 @@ class FilesRepositoryImpl @Inject constructor(
                         name = displayName,
                         mimeType = mimeType,
                         isFolder = mimeType == DocumentsContract.Document.MIME_TYPE_DIR,
-                        uri = docUri
+                        uri = docUri,
+                        size = size,
+                        date = date
                     )
                 )
             }
@@ -159,5 +170,9 @@ class FilesRepositoryImpl @Inject constructor(
         }
         val target = DocumentFile.fromSingleUri(context, uri)
         target?.delete()
+    }
+
+    override suspend fun pathExists(uri: Uri): Boolean {
+        return DocumentFile.fromTreeUri(context, uri)?.exists() == true
     }
 }

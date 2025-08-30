@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilesTopBar(title: String, displayBackIcon: Boolean, scrollBehaviour: TopAppBarScrollBehavior, onCreateFolder:()->Unit, onGoBack: () -> Unit,) {
+fun FilesTopBar(title: String, displayBackIcon: Boolean, scrollBehaviour: TopAppBarScrollBehavior, onCreateFolder:()->Unit, onGoBack: () -> Unit, onNavigateSettings:()->Unit) {
 
     TopAppBar(
         scrollBehavior = scrollBehaviour,
@@ -32,7 +32,7 @@ fun FilesTopBar(title: String, displayBackIcon: Boolean, scrollBehaviour: TopApp
 
             IconButton(
                 onClick = {
-                    // open settings
+                    onNavigateSettings()
                 },
             ) {
                 Icon(

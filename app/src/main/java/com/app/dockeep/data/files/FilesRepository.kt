@@ -12,4 +12,5 @@ interface FilesRepository {
     suspend fun listAllDirectories(root: Uri, parent:String=""): List<Pair<String, Uri>>
     suspend fun renameDocument(uri: Uri, name: String)
     suspend fun deleteDocument(uri: Uri)
+    suspend fun pathExists(uri: Uri): Boolean
 }

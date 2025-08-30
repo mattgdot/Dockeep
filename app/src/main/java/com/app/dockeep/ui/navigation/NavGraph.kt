@@ -6,9 +6,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.app.dockeep.ui.screens.files.FilesScreen
+import com.app.dockeep.ui.screens.settings.SettingsScreen
 import com.app.dockeep.utils.Constants.FILES_DIR
 import com.app.dockeep.utils.Constants.FILES_ROUTE
 import com.app.dockeep.utils.Constants.PATH_ARG
+import com.app.dockeep.utils.Constants.SETTINGS_ROUTE
 import com.app.dockeep.utils.Constants.URI_ARG
 
 
@@ -33,6 +35,14 @@ fun NavGraph(navController: NavHostController) {
 
                 },
                 navController = navController,
+            )
+        }
+
+        composable(SETTINGS_ROUTE) {
+            SettingsScreen(
+                onGoBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }

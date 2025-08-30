@@ -2,6 +2,7 @@ package com.app.dockeep.utils
 
 object Constants {
     const val FILES_ROUTE = "files"
+    const val SETTINGS_ROUTE = "settings"
     const val FILES_DIR = "Dockeep"
     const val PATH_ARG = "path"
     const val URI_ARG = "uri"

@@ -37,9 +37,11 @@ import com.app.dockeep.ui.screens.files.components.FileListItem
 import com.app.dockeep.ui.screens.files.components.FilesEmptyState
 import com.app.dockeep.ui.screens.files.components.FilesFAB
 import com.app.dockeep.ui.screens.files.components.FilesTopBar
+import com.app.dockeep.utils.Constants.SETTINGS_ROUTE
 import com.app.dockeep.utils.Helper.openDocument
 import com.app.dockeep.utils.Helper.openDocumentIntent
 import com.app.dockeep.utils.Helper.shareDocument
+import java.lang.Exception
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,11 +74,10 @@ fun FilesScreen(
     val filesList by mainVM.files
 
     LaunchedEffect(key1 = Unit) {
-        if (mainVM.getContentPathUri().isNullOrBlank()) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            contentPathLauncher.launch(intent)
-        } else {
+        try {
             mainVM.loadFiles(uri)
+        } catch(_: Exception) {
+
         }
     }
 
@@ -95,9 +96,13 @@ fun FilesScreen(
                 onCreateFolder = {
                     showCreateFolderDialog = true
                 },
-            ) {
-                navController.popBackStack()
-            }
+                onNavigateSettings = {
+                    navController.navigate(SETTINGS_ROUTE)
+                },
+                onGoBack = {
+                    navController.popBackStack()
+                }
+            )
         },
 
         ) { innerPadding ->
@@ -107,7 +112,14 @@ fun FilesScreen(
         }
 
         LaunchedEffect(lifecycleState) {
-            if (lifecycleState == Lifecycle.State.RESUMED && !mainVM.getContentPathUri().isNullOrBlank()) mainVM.loadFiles(uri)
+            if (lifecycleState == Lifecycle.State.RESUMED) {
+                if (mainVM.getContentPathUri().isNullOrBlank() || !mainVM.rootExists()) {
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                    contentPathLauncher.launch(intent)
+                } else {
+                    mainVM.loadFiles(uri)
+                }
+            }
         }
 
         if(showConfirmDelete) {

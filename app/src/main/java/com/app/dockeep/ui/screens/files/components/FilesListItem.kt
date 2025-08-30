@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.app.dockeep.model.DocumentItem
+import com.app.dockeep.utils.Helper.humanReadableSize
 
 @Composable
 fun FileListItem(
@@ -40,7 +41,7 @@ fun FileListItem(
             )
         },
         supportingContent = {
-            Text(if (item.isFolder) "Folder" else item.mimeType, overflow = TextOverflow.Ellipsis, maxLines = 1)
+            Text(if (item.isFolder) "Folder" else "${humanReadableSize(item.size!!)} • ${item.mimeType}", overflow = TextOverflow.Ellipsis, maxLines = 1)
         },
         leadingContent = {
             Box(

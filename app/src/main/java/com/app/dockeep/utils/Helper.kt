@@ -2,9 +2,16 @@ package com.app.dockeep.utils
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
+import androidx.core.content.pm.PackageInfoCompat
+import com.app.dockeep.model.AppVersion
 import java.lang.Exception
+import java.text.DecimalFormat
+import kotlin.math.log10
+import kotlin.math.pow
 
 object Helper {
     fun Context.openDocument(uri: Uri, mimeType: String?) {
@@ -50,5 +57,49 @@ object Helper {
         addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         setType("*/*")
+    }
+
+    fun Context.getAppVersion(): AppVersion? {
+        return try {
+            val packageManager = packageManager
+            val packageName = packageName
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                packageManager.getPackageInfo(packageName, 0)
+            }
+            AppVersion(
+                versionName = packageInfo.versionName,
+                versionNumber = PackageInfoCompat.getLongVersionCode(packageInfo),
+            )
+        } catch (_: Exception) {
+
+        } as AppVersion?
+    }
+
+    fun Context.getAppName(): String = applicationInfo.loadLabel(packageManager).toString()
+
+    fun humanReadableSize(bytes: Long, decimalPlaces: Int = 1): String {
+        if (bytes <= 0) return "0 Bytes" // Or handle negative values as an error/empty string
+
+        // Array of units
+        val units = arrayOf("Bytes", "KB", "MB", "GB", "TB", "PB", "EB")
+
+        // Calculate the magnitude
+        val magnitude = (log10(bytes.toDouble()) / log10(1000.0)).toInt()
+
+        // Ensure magnitude is within the bounds of our units array
+        val unitIndex = if (magnitude >= units.size) units.size - 1 else magnitude
+
+        // Calculate the value in the chosen unit
+        val valueInUnit = bytes / 1000.0.pow(unitIndex.toDouble())
+
+        // Format the number with specified decimal places
+        val decimalFormat = DecimalFormat("#,##0.${"#".repeat(decimalPlaces)}")
+        // Or for a fixed number of decimal places without grouping separator:
+        // val decimalFormat = DecimalFormat("0.${"0".repeat(decimalPlaces)}")
+
+
+        return "${decimalFormat.format(valueInUnit)} ${units[unitIndex]}"
     }
 }

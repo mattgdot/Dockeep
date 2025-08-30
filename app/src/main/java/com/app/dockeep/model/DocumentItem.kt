@@ -7,5 +7,7 @@ data class DocumentItem(
     val name: String,
     val mimeType: String,
     val isFolder: Boolean,
-    val uri: Uri
+    val uri: Uri,
+    val size: Long?,
+    val date: Long?
 )

@@ -39,6 +39,9 @@ class MainViewModel @Inject constructor(
 
     suspend fun getContentPathUri(): String? = prefRepo.getString(CONTENT_PATH_KEY)
 
+    suspend fun rootExists(): Boolean = filesRepo.pathExists(getContentPathUri()?.toUri() ?: Uri.EMPTY)
+
+
     private suspend fun resolveFolderUri(folderUri: String): Uri {
         val uriString = folderUri.ifBlank {
             getContentPathUri() ?: ""
