@@ -37,47 +37,59 @@ class FilesRepositoryImpl @Inject constructor(
         val targetDir = DocumentFile.fromTreeUri(context, folderUri) ?: return
 
         for (uri in files) {
-            try {
-                persistUriPermissions(uri)
-            } catch (e: Exception) {
-                Log.e("FilesRepository", "Failed to persist URI permission for $uri", e)
-            }
-
-            var displayName = UNK
-            var mimeType: String?
-
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex != -1) {
-                        displayName = cursor.getString(nameIndex)
-                    }
+            val target = DocumentFile.fromSingleUri(context, uri)
+            if(target?.isDirectory == false) {
+                try {
+                    persistUriPermissions(uri)
+                } catch (e: Exception) {
+                  //  Log.e("FilesRepository", "Failed to persist URI permission for $uri", e)
                 }
-            }
 
-            mimeType = context.contentResolver.getType(uri)
+                var displayName = UNK
+                var mimeType: String?
 
-            if (mimeType == null) {
-                val extension = displayName.substringAfterLast('.', "")
-                mimeType =
-                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: OCTET_STREAM
-            }
-
-            val file = targetDir.createFile(mimeType, displayName)
-
-            if (file != null) {
-                context.contentResolver.openInputStream(uri).use { ifs ->
-                    context.contentResolver.openOutputStream(file.uri).use { of ->
-                        if (ifs != null && of != null) {
-                            ifs.copyTo(of)
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1) {
+                            displayName = cursor.getString(nameIndex)
                         }
                     }
+                }
+
+                mimeType = context.contentResolver.getType(uri)
+
+                if (mimeType == null) {
+                    val extension = displayName.substringAfterLast('.', "")
+                    mimeType =
+                        MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                            ?: OCTET_STREAM
+                }
+
+                val file = targetDir.createFile(mimeType, displayName)
+
+                if (file != null) {
+                    context.contentResolver.openInputStream(uri).use { ifs ->
+                        context.contentResolver.openOutputStream(file.uri).use { of ->
+                            if (ifs != null && of != null) {
+                                ifs.copyTo(of)
+                            }
+                        }
+                    }
+                }
+            } else {
+                target?.let { iuri ->
+                    val nuri = createDirectory(folderUri, iuri.name!!)
+                    val files = listFilesInDirectory(iuri.uri)
+                  //  if(files.isNotEmpty())
+                        copyFilesToFolder(nuri, files.map { it.uri })
                 }
             }
         }
     }
 
     override suspend fun listFilesInDirectory(folderUri: Uri): List<DocumentItem> {
+        
         val files = mutableListOf<DocumentItem>()
 
         val targetDir = DocumentFile.fromTreeUri(context, folderUri) ?: return emptyList()
@@ -93,8 +105,8 @@ class FilesRepositoryImpl @Inject constructor(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE,
-            DocumentsContract.Document.COLUMN_SIZE, // Add OpenableColumns.SIZE to your projection
-            DocumentsContract.Document.COLUMN_LAST_MODIFIED // Add COLUMN_LAST_MODIFIED
+            DocumentsContract.Document.COLUMN_SIZE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
         )
 
         if(!pathExists(targetDir.uri)) return emptyList()
@@ -130,6 +142,7 @@ class FilesRepositoryImpl @Inject constructor(
                 )
             }
         }
+
         return files
     }
 
@@ -174,5 +187,9 @@ class FilesRepositoryImpl @Inject constructor(
 
     override suspend fun pathExists(uri: Uri): Boolean {
         return DocumentFile.fromTreeUri(context, uri)?.exists() == true
+    }
+
+    override suspend fun moveDocument(uri: Uri, destination: Uri) {
+
     }
 }

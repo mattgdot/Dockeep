@@ -11,8 +11,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.dockeep.ui.MainViewModel
-import com.app.dockeep.ui.components.ShareImportDialog
+import com.app.dockeep.ui.components.SelectFolderDialog
 import com.app.dockeep.ui.theme.DockeepTheme
+import com.app.dockeep.utils.Helper.extractUris
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -29,10 +30,12 @@ class ShareReceiverActivity : ComponentActivity() {
                 val dirs by mainVM.folders
                 var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 
-                ShareImportDialog(
+                SelectFolderDialog(
                     folders = dirs,
+                    onFolderSelected = {
+                        selectedIndex = it
+                    },
                     selectedIndex = selectedIndex,
-                    onFolderSelected = { index -> selectedIndex = index },
                     onConfirm = {
                         shareIntent?.let { intent ->
                             if (intent.action == Intent.ACTION_SEND ||
@@ -40,12 +43,13 @@ class ShareReceiverActivity : ComponentActivity() {
                             ) {
                                 val folderUri =
                                     dirs.getOrNull(selectedIndex)?.second?.toString() ?: return@let
-                                mainVM.importFiles(intent, folderUri)
+                                mainVM.importFiles(intent.extractUris(), folderUri)
                                 finish()
                             }
                         }
                     },
-                    onDismiss = { finish() }
+                    onDismiss = { finish() },
+                    title = "Import"
                 )
             }
         }

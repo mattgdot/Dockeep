@@ -1,19 +1,19 @@
 [versions]
 agp = "8.11.1"
-hiltAndroid = "2.57"
+hiltAndroid = "2.57.1"
 hiltNavigationCompose = "1.2.0"
-kotlin = "2.2.0"
-coreKtx = "1.16.0"
+kotlin = "2.2.10"
+coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
-lifecycleRuntimeKtx = "2.9.2"
+lifecycleRuntimeKtx = "2.9.3"
 activityCompose = "1.10.1"
-composeBom = "2025.07.00"
+composeBom =  "2025.08.01"
 datastore = "1.1.7"
 ksp = "2.2.0-2.0.2"
 documentfile = "1.1.0"
-navComp = "2.8.3"
+navComp = "2.9.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

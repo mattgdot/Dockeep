@@ -2,9 +2,7 @@ package com.app.dockeep.ui
 
 import android.app.Activity
 import android.app.Application
-import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
@@ -16,7 +14,9 @@ import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
 import com.app.dockeep.utils.Helper.extractUris
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,25 +28,30 @@ class MainViewModel @Inject constructor(
 
     var files = mutableStateOf(listOf<DocumentItem>())
     var folders = mutableStateOf(listOf<Pair<String, Uri>>())
+    val loading = mutableStateOf(false)
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             getContentPathUri()?.let { uri ->
-                folders.value = filesRepo.listAllDirectories(uri.toUri())
+                loadFiles(uri)
             }
         }
     }
 
     suspend fun getContentPathUri(): String? = prefRepo.getString(CONTENT_PATH_KEY)
 
-    suspend fun rootExists(): Boolean = filesRepo.pathExists(getContentPathUri()?.toUri() ?: Uri.EMPTY)
-
+    suspend fun rootExists(): Boolean =
+        filesRepo.pathExists(getContentPathUri()?.toUri() ?: Uri.EMPTY)
 
     private suspend fun resolveFolderUri(folderUri: String): Uri {
-        val uriString = folderUri.ifBlank {
-            getContentPathUri() ?: ""
-        }
+        val uriString = folderUri.ifBlank { getContentPathUri() ?: "" }
         return uriString.toUri()
+    }
+
+    private suspend fun setLoading(boolean: Boolean) {
+        withContext(Dispatchers.Main) {
+            loading.value = boolean
+        }
     }
 
     fun setContentPathUri(result: ActivityResult) {
@@ -54,24 +59,44 @@ class MainViewModel @Inject constructor(
         val uri = result.data?.data ?: return
 
         viewModelScope.launch {
-            val rootUri = filesRepo.setRootLocation(uri)
-            prefRepo.putString(CONTENT_PATH_KEY, rootUri.toString())
-            loadFiles(rootUri.toString())
+            filesRepo.setRootLocation(uri).toString().let {
+                prefRepo.putString(CONTENT_PATH_KEY, it)
+                loadFiles(it)
+            }
         }
     }
 
-    fun loadFiles(folderUri: String = "") {
-        viewModelScope.launch {
-            val folder = resolveFolderUri(folderUri)
-            files.value = filesRepo.listFilesInDirectory(folder)
+    suspend fun loadFiles(folderUri: String = "") {
+        if(files.value.isEmpty()) setLoading(true)
+
+        val folder = resolveFolderUri(folderUri)
+
+        val fileList = withContext(Dispatchers.IO) {
+            filesRepo.listFilesInDirectory(folder)
                 .sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { it.name })
         }
+
+        withContext(Dispatchers.Main) {
+            files.value = fileList
+        }
+
+        setLoading(false)
+
+        val folderList = withContext(Dispatchers.IO) {
+            filesRepo.listAllDirectories(getContentPathUri()?.toUri() ?: Uri.EMPTY)
+        }
+
+        withContext(Dispatchers.Main) {
+            folders.value = folderList
+        }
     }
+
 
     fun loadAndCopyFiles(folderUri: String = "", result: ActivityResult) {
         if (result.resultCode != Activity.RESULT_OK) return
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            setLoading(true)
             val uris = result.data?.extractUris() ?: return@launch
             val folder = resolveFolderUri(folderUri)
             filesRepo.copyFilesToFolder(folder, uris)
@@ -80,34 +105,51 @@ class MainViewModel @Inject constructor(
     }
 
     fun createFolder(parent: String = "", name: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val folder = resolveFolderUri(parent)
             filesRepo.createDirectory(folder, name)
             loadFiles(folder.toString())
         }
     }
 
-    fun deleteFile(folder: String = "", doc: Uri) {
-        viewModelScope.launch {
-            filesRepo.deleteDocument(doc)
+    fun deleteFiles(folder: String, uris: List<Uri>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            setLoading(true)
+            uris.forEach { doc ->
+                filesRepo.deleteDocument(doc)
+            }
             loadFiles(folder)
         }
     }
 
     fun renameFile(folder: String = "", doc: Uri, name: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             filesRepo.renameDocument(doc, name)
             loadFiles(folder)
         }
     }
 
-    fun importFiles(intent: Intent, folderUri: String = "") {
-        viewModelScope.launch {
-            val uris = intent.extractUris()
+    fun importFiles(
+        uris: List<Uri>,
+        folderUri: String = "",
+        load: Boolean = true,
+        remove: Boolean = false,
+        src: String = ""
+    ) {
+
+        viewModelScope.launch(Dispatchers.IO) {
+            setLoading(true)
             val folder = resolveFolderUri(folderUri)
+
             filesRepo.copyFilesToFolder(folder, uris)
-            Toast.makeText(getApplication(), "Imported successfully", Toast.LENGTH_SHORT).show()
-            loadFiles(folder.toString())
+            if (remove) uris.forEach { filesRepo.deleteDocument(it) }
+
+            val src = resolveFolderUri(src)
+
+            setLoading(false)
+
+            if (load) loadFiles(folderUri)
+            if(remove) loadFiles(src.toString())
         }
     }
 }

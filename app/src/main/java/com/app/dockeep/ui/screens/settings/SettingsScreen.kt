@@ -29,19 +29,15 @@ fun SettingsScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onGoBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null
-                        )
-                    }
+            TopAppBar(title = { Text("Settings") }, navigationIcon = {
+                IconButton(onClick = onGoBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null
+                    )
                 }
-            )
-        }
-    ) {
+            })
+        }) {
         BackHandler {
             onGoBack()
         }
@@ -54,9 +50,11 @@ fun SettingsScreen(
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                Column(modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(10.dp)) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(10.dp)
+                ) {
                     Text("${context.getAppName()} • Version: ${context.getAppVersion()?.versionNumber}")
                 }
             }

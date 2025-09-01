@@ -1,5 +1,6 @@
 package com.app.dockeep.utils
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -26,12 +27,34 @@ object Helper {
         }
     }
 
-    fun Context.shareDocument(uri: Uri, mimeType: String?) {
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            putExtra(Intent.EXTRA_STREAM, uri)
-            type = mimeType
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    fun Context.shareDocument(uris: List<Uri>, mimeTypes: List<String>) {
+        val intent = if (uris.size == 1) {
+            Intent(Intent.ACTION_SEND).apply {
+                putExtra(Intent.EXTRA_STREAM, uris[0])
+                type = mimeTypes[0]
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newRawUri("", uris[0])
+            }
+        } else {
+            val array = arrayListOf<Uri>()
+            array.addAll(uris)
+            val clipD  = ClipData(
+                "",
+                mimeTypes.toTypedArray(),
+                ClipData.Item(uris[0])
+            )
+            for (i in 1 until uris.size) {
+                clipD.addItem(ClipData.Item(uris[i]))
+            }
+
+            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                setType("*/*")
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, array)
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                clipData = clipData
+            }
         }
+
         try {
             startActivity(Intent.createChooser(intent, null))
         } catch (_: Exception) {
@@ -80,25 +103,12 @@ object Helper {
     fun Context.getAppName(): String = applicationInfo.loadLabel(packageManager).toString()
 
     fun humanReadableSize(bytes: Long, decimalPlaces: Int = 1): String {
-        if (bytes <= 0) return "0 Bytes" // Or handle negative values as an error/empty string
-
-        // Array of units
+        if (bytes <= 0) return "0 Bytes"
         val units = arrayOf("Bytes", "KB", "MB", "GB", "TB", "PB", "EB")
-
-        // Calculate the magnitude
         val magnitude = (log10(bytes.toDouble()) / log10(1000.0)).toInt()
-
-        // Ensure magnitude is within the bounds of our units array
         val unitIndex = if (magnitude >= units.size) units.size - 1 else magnitude
-
-        // Calculate the value in the chosen unit
         val valueInUnit = bytes / 1000.0.pow(unitIndex.toDouble())
-
-        // Format the number with specified decimal places
         val decimalFormat = DecimalFormat("#,##0.${"#".repeat(decimalPlaces)}")
-        // Or for a fixed number of decimal places without grouping separator:
-        // val decimalFormat = DecimalFormat("0.${"0".repeat(decimalPlaces)}")
-
 
         return "${decimalFormat.format(valueInUnit)} ${units[unitIndex]}"
     }

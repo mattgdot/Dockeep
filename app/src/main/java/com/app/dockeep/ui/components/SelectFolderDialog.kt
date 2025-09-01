@@ -13,19 +13,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ShareImportDialog(
+fun SelectFolderDialog(
     folders: List<Pair<String, Uri>>,
     selectedIndex: Int,
     onFolderSelected: (Int) -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    title: String
 ) {
     AlertDialog(
         icon = {
             Icon(Icons.Default.Add, contentDescription = null)
         },
         title = {
-            Text(text = "Import file(s)")
+            Text(text = title)
         },
         text = {
             LargeMenuDropdown(

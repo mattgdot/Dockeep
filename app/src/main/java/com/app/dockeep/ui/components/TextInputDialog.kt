@@ -1,6 +1,9 @@
 package com.app.dockeep.ui.components
 
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -16,6 +19,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,8 +33,10 @@ fun TextInputDialog(
 ) {
     var textFieldValue by remember { mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length))) }
     val focusRequester = remember { FocusRequester() }
+    val interactionSource = remember { MutableInteractionSource() }
 
     LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(100)
         focusRequester.requestFocus()
     }
 
@@ -46,9 +52,14 @@ fun TextInputDialog(
                 textStyle = TextStyle(
                     fontSize = 18.sp
                 ),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    capitalization = KeyboardCapitalization.Sentences
+                ),
                 modifier = Modifier
                     .padding(5.dp)
-                    .focusRequester(focusRequester),
+                    .focusable(interactionSource = interactionSource)
+                    .focusRequester(focusRequester)
+                ,
             )
         },
         onDismissRequest = {

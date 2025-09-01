@@ -13,4 +13,5 @@ interface FilesRepository {
     suspend fun renameDocument(uri: Uri, name: String)
     suspend fun deleteDocument(uri: Uri)
     suspend fun pathExists(uri: Uri): Boolean
+    suspend fun moveDocument(uri: Uri, destination: Uri)
 }

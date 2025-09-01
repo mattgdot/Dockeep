@@ -1,7 +1,7 @@
 package com.app.dockeep.ui.screens.files.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -10,9 +10,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,9 +33,17 @@ import com.app.dockeep.utils.Helper.humanReadableSize
 fun FileListItem(
     item: DocumentItem,
     onClick: () -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    isSelected: Boolean,
+    selectionMode: Boolean,
+    addToSelected: (DocumentItem) -> Unit,
+    removeFromSelected: (DocumentItem) -> Unit,
+    onLongClick: () -> Unit
 ) {
     ListItem(
+        colors = if(isSelected)  ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.3f)
+        ) else ListItemDefaults.colors(),
         headlineContent = {
             Text(
                 item.name,
@@ -41,27 +53,72 @@ fun FileListItem(
             )
         },
         supportingContent = {
-            Text(if (item.isFolder) "Folder" else "${humanReadableSize(item.size!!)} • ${item.mimeType}", overflow = TextOverflow.Ellipsis, maxLines = 1)
+            Text(
+                if (item.isFolder) "Folder" else "${humanReadableSize(item.size!!)} • ${item.mimeType}",
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
+            )
         },
         leadingContent = {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    if (item.isFolder) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
-                    contentDescription = null
-                )
-            }
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        if (item.isFolder) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
+                        contentDescription = null
+                    )
+                }
+
         },
         trailingContent = {
-            IconButton(onClick = onMoreClick) { Icon(Icons.Default.MoreVert, null) }
+            if (selectionMode) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            } else {
+                IconButton(onClick = onMoreClick) { Icon(Icons.Default.MoreVert, null) }
+            }
         },
         modifier = Modifier
             .padding(vertical = 5.dp)
-            .clickable { onClick() }
+            .clip(RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = {
+                    if (selectionMode) {
+                        if (isSelected) {
+                            removeFromSelected(item)
+                        } else {
+                            addToSelected(item)
+                        }
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = {
+                    if (selectionMode) {
+                        if (isSelected) {
+                            removeFromSelected(item)
+                        } else {
+                            addToSelected(item)
+                        }
+                    } else {
+                        onLongClick()
+                    }
+                },
+            ),
     )
 }
