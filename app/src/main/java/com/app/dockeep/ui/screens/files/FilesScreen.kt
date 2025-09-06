@@ -5,49 +5,40 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.ui.MainViewModel
-import com.app.dockeep.ui.components.ConfirmActionDialog
 import com.app.dockeep.ui.components.LoadingDialog
 import com.app.dockeep.ui.components.OptionsBottomSheet
-import com.app.dockeep.ui.components.SelectFolderDialog
-import com.app.dockeep.ui.components.TextInputDialog
+import com.app.dockeep.ui.components.SortBottomSheet
+import com.app.dockeep.ui.screens.files.components.Dialogs
 import com.app.dockeep.ui.screens.files.components.FileListItem
 import com.app.dockeep.ui.screens.files.components.FilesEmptyState
 import com.app.dockeep.ui.screens.files.components.FilesFAB
 import com.app.dockeep.ui.screens.files.components.FilesTopBar
+import com.app.dockeep.ui.screens.files.components.SelectAllCheckbox
 import com.app.dockeep.ui.screens.files.components.SelectionTopBar
 import com.app.dockeep.utils.Constants.SETTINGS_ROUTE
 import com.app.dockeep.utils.Helper.openDocument
@@ -75,19 +66,19 @@ fun FilesScreen(
 
     val context = LocalContext.current
     val scrollBehaviour = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    var showCreateFolderDialog by rememberSaveable { mutableStateOf(false) }
-    var showRenameFileDialog by rememberSaveable { mutableStateOf(false) }
-    var showOptionsSheet by rememberSaveable { mutableStateOf(false) }
-    var showConfirmDelete by rememberSaveable { mutableStateOf(false) }
-    var showMoveDialog by rememberSaveable { mutableStateOf(false) }
-    var removeOnMove by rememberSaveable { mutableStateOf(false) }
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
+    var showRenameFileDialog by remember { mutableStateOf(false) }
+    var showOptionsSheet by remember { mutableStateOf(false) }
+    var showSortSheet by remember { mutableStateOf(false) }
+    var showConfirmDelete by remember { mutableStateOf(false) }
+    var showMoveDialog by remember { mutableStateOf(false) }
+    var removeOnMove by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<DocumentItem?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
     val filesList by mainVM.files
+    val dirList by mainVM.folders
     val loading by mainVM.loading
-
-    var selectAllChecked by remember { mutableStateOf(false) }
 
     var isInSelectionMode by remember {
         mutableStateOf(false)
@@ -99,16 +90,9 @@ fun FilesScreen(
     val resetSelectionMode = {
         isInSelectionMode = false
         selectedItems.clear()
-        selectAllChecked = false
     }
 
-    val selectOrDeselect = {
-        if (selectAllChecked) {
-            selectedItems.removeAll(filesList)
-            val itemsToAdd = filesList.filterNot { it in selectedItems }
-            selectedItems.addAll(itemsToAdd)
-        } else selectedItems.removeAll(filesList)
-    }
+    val effectiveItems = selectedItems.ifEmpty { selectedItem?.let { listOf(it) } ?: emptyList() }
 
     LaunchedEffect(key1 = Unit) {
         try {
@@ -125,7 +109,6 @@ fun FilesScreen(
     ) {
         if (isInSelectionMode && selectedItems.isEmpty()) {
             isInSelectionMode = false
-            selectAllChecked = false
         }
     }
 
@@ -144,7 +127,8 @@ fun FilesScreen(
                     openOptionsClick = {
                         showOptionsSheet = true
                         selectedItem = selectedItems[0]
-                    })
+                    },
+                )
             } else {
                 FilesTopBar(
                     title = path,
@@ -158,7 +142,11 @@ fun FilesScreen(
                     },
                     onGoBack = {
                         navController.popBackStack()
-                    })
+                    },
+                    onSort = {
+                        showSortSheet = true
+                    }
+                )
             }
         },
 
@@ -172,8 +160,10 @@ fun FilesScreen(
         LaunchedEffect(lifecycleState) {
             if (lifecycleState == Lifecycle.State.RESUMED) {
                 if (mainVM.getContentPathUri().isNullOrBlank() || !mainVM.rootExists()) {
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-                    contentPathLauncher.launch(intent)
+                    if(!mainVM.launched) {
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                        contentPathLauncher.launch(intent)
+                    }
                 } else {
                     mainVM.loadFiles(uri)
                     resetSelectionMode()
@@ -181,179 +171,142 @@ fun FilesScreen(
             }
         }
 
-        if (showConfirmDelete) {
-            val items = selectedItems.ifEmpty { selectedItem?.let { listOf(it) } ?: listOf() }
-
-            ConfirmActionDialog(
-                title = "Delete ${items.size} item(s)?",
-                message = "This action can not be undone.",
-                onDismiss = { showConfirmDelete = false },
-                onConfirm = {
-                    mainVM.deleteFiles(uri, items.map { it.uri })
-                    showConfirmDelete = false
-                    resetSelectionMode()
-                },
-            )
-
-        }
-
-        if (showCreateFolderDialog) {
-            TextInputDialog(
-                title = "Create Folder",
+        if(showSortSheet) {
+            SortBottomSheet(
+                initial = mainVM.getSortType(),
                 onDismiss = {
-                    showCreateFolderDialog = false
+                    showSortSheet = false
                 },
-                onConfirm = {
-                    mainVM.createFolder(
-                        uri, it
-                    )
-                    showCreateFolderDialog = false
-                },
-            )
-        }
-
-        if (showRenameFileDialog) {
-            TextInputDialog(
-                title = "Rename",
-                initialText = selectedItem?.name ?: "",
-                onDismiss = {
-                    showRenameFileDialog = false
-                },
-                onConfirm = {
-                    mainVM.renameFile(
-                        uri, selectedItem?.uri!!, it
-                    )
-                    showRenameFileDialog = false
-                },
-            )
-        }
-
-        if (showMoveDialog) {
-            val dirs by mainVM.folders
-            val items = selectedItems.ifEmpty { selectedItem?.let { listOf(it) } ?: listOf() }
-            var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
-            val dirsFiltered = dirs.filterNot { fu ->
-                fu.second.toString() == uri || items.any { it.uri == fu.second }
-            }
-
-            SelectFolderDialog(
-                title = if (removeOnMove) "Move" else "Copy",
-                folders = dirsFiltered,
-                onFolderSelected = {
-                    selectedIndex = it
-                },
-                selectedIndex = selectedIndex,
-                onConfirm = {
-                    val folderUri = dirsFiltered.getOrNull(selectedIndex)?.second?.toString() ?: ""
-
-                    mainVM.importFiles(
-                        items.map { it.uri }, folderUri, false, removeOnMove, uri
-                    )
-                    showMoveDialog = false
-                    resetSelectionMode()
-
-                },
-                onDismiss = { showMoveDialog = false },
+                onSelect = {
+                    mainVM.sortFiles(it)
+                    showSortSheet = false
+                }
             )
         }
 
         if (showOptionsSheet) {
             OptionsBottomSheet(
-                items = selectedItems.ifEmpty { selectedItem?.let { listOf(it) } ?: listOf() },
+                items = effectiveItems,
                 onDismiss = {
                     showOptionsSheet = false
                 },
                 onRename = {
                     showRenameFileDialog = true
-                    showOptionsSheet = false
                 },
                 onDelete = {
                     showConfirmDelete = true
-                    showOptionsSheet = false
                 },
                 onOpen = { item ->
                     context.openDocument(item.uri, item.mimeType)
-                    showOptionsSheet = false
                 },
                 onShare = { items ->
-                    context.shareDocument(items.map { it.uri }.toList(), items.map { it.mimeType })
-                    showOptionsSheet = false
+                    context.shareDocument(
+                        uris = items.map { it.uri }.toList(),
+                        mimeTypes = items.map { it.mimeType }
+                    )
                 },
                 onMove = { files, delete ->
                     removeOnMove = delete
                     showMoveDialog = true
-                    showOptionsSheet = false
-                })
+                },
+            )
         }
+
+        Dialogs(
+            effectiveItems = effectiveItems,
+            showConfirmDelete = showConfirmDelete,
+            onDeleteConfirm = {
+                mainVM.deleteFiles(uri, effectiveItems.map { it.uri })
+                showConfirmDelete = false
+                resetSelectionMode()
+            },
+            dismissDelete = {showConfirmDelete = false},
+            showCreateFolder = showCreateFolderDialog,
+            onCreateFolderConfirm = {
+                mainVM.createFolder(
+                    uri, it
+                )
+                showCreateFolderDialog = false
+            },
+            dismissCreateFolder = {showCreateFolderDialog  = false},
+            showRename = showRenameFileDialog,
+            onConfirmRename = {
+                selectedItem?.uri?.let { doc ->
+                    mainVM.renameFile(
+                        uri, doc, it
+                    )
+                }
+                showRenameFileDialog = false
+            },
+            dismissRename = {showRenameFileDialog = false},
+            showMove = showMoveDialog,
+            onMoveConfirm = { folderUri ->
+                mainVM.importFiles(
+                    effectiveItems.map { it.uri }, folderUri, false, removeOnMove, uri
+                )
+                showMoveDialog = false
+                resetSelectionMode()
+            },
+            dismissMove = {showMoveDialog = false},
+            dirList = dirList,
+            rootUri = uri,
+            removeOnMove = removeOnMove
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-
+            if (loading) {
+                LoadingDialog()
+            }
             if (filesList.isEmpty()) {
                 FilesEmptyState()
-            } else {
-                if (loading) {
-                    LoadingDialog()
-                }
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
+            }
 
-                    if (isInSelectionMode) {
-                        item {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 15.dp)
-                            ) {
-                                Checkbox(
-                                    checked = selectAllChecked,
-                                    onCheckedChange = {
-                                        selectAllChecked = !selectAllChecked
-                                        selectOrDeselect()
-                                    },
-                                    colors = CheckboxDefaults.colors()
-                                        .copy(uncheckedBorderColor = MaterialTheme.colorScheme.primary)
-                                )
-                                Text(
-                                    "Select all",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (isInSelectionMode) {
+                    item {
+                        SelectAllCheckbox { isChecked ->
+                            if (isChecked) {
+                                selectedItems.removeAll(filesList)
+                                val itemsToAdd = filesList.filterNot { it in selectedItems }
+                                selectedItems.addAll(itemsToAdd)
+                            } else selectedItems.removeAll(filesList)
                         }
                     }
+                }
 
-                    items(filesList) { item ->
-                        val isSelected = selectedItems.contains(item)
-                        FileListItem(
-                            item = item,
-                            onClick = {
-                                if (item.isFolder) onNavigate(item.uri.toString(), item.name)
-                                else context.openDocument(item.uri, item.mimeType)
-                            },
-                            onMoreClick = {
-                                selectedItem = item
-                                showOptionsSheet = true
-                            },
-                            isSelected = isSelected,
-                            selectionMode = isInSelectionMode,
-                            addToSelected = {
-                                selectedItems.add(item)
-                            },
-                            removeFromSelected = {
-                                selectedItems.remove(item)
-                            },
-                            onLongClick = {
-                                isInSelectionMode = true
-                                selectedItems.add(item)
-                            },
-                        )
-                    }
+                items(filesList) { item ->
+                    val isSelected = selectedItems.contains(item)
+                    FileListItem(
+                        item = item,
+                        onClick = {
+                            if (item.isFolder) onNavigate(item.uri.toString(), item.name)
+                            else context.openDocument(item.uri, item.mimeType)
+                        },
+                        onMoreClick = {
+                            selectedItem = item
+                            showOptionsSheet = true
+                        },
+                        isSelected = isSelected,
+                        selectionMode = isInSelectionMode,
+                        addToSelected = {
+                            selectedItems.add(item)
+                        },
+                        removeFromSelected = {
+                            selectedItems.remove(item)
+                        },
+                        onLongClick = {
+                            isInSelectionMode = true
+                            selectedItems.add(item)
+                        },
+                    )
                 }
             }
         }
-
     }
 }

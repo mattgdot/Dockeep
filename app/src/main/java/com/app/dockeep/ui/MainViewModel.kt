@@ -12,12 +12,15 @@ import com.app.dockeep.data.files.FilesRepository
 import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
+import com.app.dockeep.utils.Constants.SORT_TYPE_KEY
 import com.app.dockeep.utils.Helper.extractUris
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import kotlin.collections.sortedWith
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -29,6 +32,7 @@ class MainViewModel @Inject constructor(
     var files = mutableStateOf(listOf<DocumentItem>())
     var folders = mutableStateOf(listOf<Pair<String, Uri>>())
     val loading = mutableStateOf(false)
+    var launched = false
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -39,6 +43,15 @@ class MainViewModel @Inject constructor(
     }
 
     suspend fun getContentPathUri(): String? = prefRepo.getString(CONTENT_PATH_KEY)
+
+    fun getSortType(): String = runBlocking {  prefRepo.getString(SORT_TYPE_KEY)  ?: "Name A - Z"}
+
+    fun setSortType(type: String){
+        viewModelScope.launch {
+            prefRepo.putString(SORT_TYPE_KEY, type)
+            println(type)
+        }
+    }
 
     suspend fun rootExists(): Boolean =
         filesRepo.pathExists(getContentPathUri()?.toUri() ?: Uri.EMPTY)
@@ -57,27 +70,27 @@ class MainViewModel @Inject constructor(
     fun setContentPathUri(result: ActivityResult) {
         if (result.resultCode != Activity.RESULT_OK) return
         val uri = result.data?.data ?: return
-
+        launched = true
         viewModelScope.launch {
             filesRepo.setRootLocation(uri).toString().let {
                 prefRepo.putString(CONTENT_PATH_KEY, it)
-                loadFiles(it)
+                loadFiles(getContentPathUri() ?: "")
             }
         }
     }
 
     suspend fun loadFiles(folderUri: String = "") {
-        if(files.value.isEmpty()) setLoading(true)
+        if (files.value.isEmpty()) setLoading(true)
 
         val folder = resolveFolderUri(folderUri)
 
         val fileList = withContext(Dispatchers.IO) {
             filesRepo.listFilesInDirectory(folder)
-                .sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { it.name })
         }
 
         withContext(Dispatchers.Main) {
             files.value = fileList
+            sortFiles(getSortType())
         }
 
         setLoading(false)
@@ -122,6 +135,61 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun sortFiles(type: String) {
+
+        setSortType(type)
+
+        when (type) {
+            "Name A - Z" -> {
+                files.value = files.value
+                    .sortedWith(
+                        compareByDescending<DocumentItem> { it.isFolder }
+                            .thenBy { if (!it.isFolder) it.name.first() else "" }
+                    )
+            }
+
+            "Name Z - A" -> {
+                files.value = files.value
+                    .sortedWith(
+                        compareByDescending<DocumentItem> { it.isFolder }
+                            .thenByDescending { if (!it.isFolder) it.name.first() else "" }
+                    )
+            }
+
+            "Largest first" -> {
+                files.value = files.value
+                    .sortedWith(
+                        compareByDescending<DocumentItem> { it.isFolder }
+                            .thenByDescending { if (!it.isFolder) it.size else 0L }
+                    )
+            }
+
+            "Smallest first" -> {
+                files.value = files.value
+                    .sortedWith(
+                        compareByDescending<DocumentItem> { it.isFolder }
+                            .thenBy { if (!it.isFolder) it.size else Long.MAX_VALUE }
+                    )
+            }
+
+            "Newest first" -> {
+                files.value = files.value
+                    .sortedWith(
+                        compareByDescending<DocumentItem> { it.isFolder }
+                            .thenByDescending { if (!it.isFolder) it.date else Long.MIN_VALUE }
+                    )
+            }
+
+            "Oldest first" -> {
+                files.value = files.value
+                    .sortedWith(
+                        compareByDescending<DocumentItem> { it.isFolder }
+                            .thenBy { if (!it.isFolder) it.date else Long.MAX_VALUE }
+                    )
+            }
+        }
+    }
+
     fun renameFile(folder: String = "", doc: Uri, name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             filesRepo.renameDocument(doc, name)
@@ -149,7 +217,7 @@ class MainViewModel @Inject constructor(
             setLoading(false)
 
             if (load) loadFiles(folderUri)
-            if(remove) loadFiles(src.toString())
+            if (remove) loadFiles(src.toString())
         }
     }
 }

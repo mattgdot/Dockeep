@@ -2,6 +2,7 @@ package com.app.dockeep.ui.screens.files.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,7 +15,7 @@ import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilesTopBar(title: String, displayBackIcon: Boolean, scrollBehaviour: TopAppBarScrollBehavior, onCreateFolder:()->Unit, onGoBack: () -> Unit, onNavigateSettings:()->Unit) {
+fun FilesTopBar(title: String, displayBackIcon: Boolean, scrollBehaviour: TopAppBarScrollBehavior, onCreateFolder:()->Unit, onGoBack: () -> Unit, onNavigateSettings:()->Unit, onSort:()->Unit) {
 
     TopAppBar(
         scrollBehavior = scrollBehaviour,
@@ -37,6 +38,16 @@ fun FilesTopBar(title: String, displayBackIcon: Boolean, scrollBehaviour: TopApp
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Settings, contentDescription = null
+                )
+            }
+
+            IconButton(
+                onClick = {
+                    onSort()
+                },
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Sort, contentDescription = null
                 )
             }
         },

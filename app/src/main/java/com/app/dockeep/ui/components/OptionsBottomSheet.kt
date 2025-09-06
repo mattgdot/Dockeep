@@ -32,24 +32,32 @@ fun OptionsBottomSheet(
                 if (!items[0].isFolder) {
                     OptionsListItem("Open", Icons.Outlined.OpenWith) {
                         onOpen(items[0])
+                        onDismiss()
                     }
                 }
                 OptionsListItem("Rename", Icons.Outlined.Edit) {
                     onRename(items[0])
+                    onDismiss()
                 }
             }
             if (!items.any { it.isFolder }) {
-                OptionsListItem("Share", Icons.Outlined.Share) { onShare(items) }
+                OptionsListItem("Share", Icons.Outlined.Share) {
+                    onShare(items)
+                    onDismiss()
+                }
             }
 
             OptionsListItem("Move to", Icons.AutoMirrored.Outlined.ArrowForward) {
                 onMove(items, true)
+                onDismiss()
             }
             OptionsListItem("Copy to", Icons.Default.ContentCopy) {
                 onMove(items, false)
+                onDismiss()
             }
             OptionsListItem("Delete", Icons.Outlined.Delete) {
                 onDelete(items)
+                onDismiss()
             }
         }
     }

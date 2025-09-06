@@ -6,9 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.dockeep.ui.MainViewModel
 import com.app.dockeep.ui.components.SelectFolderDialog
@@ -28,21 +25,13 @@ class ShareReceiverActivity : ComponentActivity() {
             DockeepTheme {
                 val mainVM: MainViewModel = hiltViewModel()
                 val dirs by mainVM.folders
-                var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
-
                 SelectFolderDialog(
                     folders = dirs,
-                    onFolderSelected = {
-                        selectedIndex = it
-                    },
-                    selectedIndex = selectedIndex,
-                    onConfirm = {
+                    onConfirm = { folderUri ->
                         shareIntent?.let { intent ->
                             if (intent.action == Intent.ACTION_SEND ||
                                 intent.action == Intent.ACTION_SEND_MULTIPLE
                             ) {
-                                val folderUri =
-                                    dirs.getOrNull(selectedIndex)?.second?.toString() ?: return@let
                                 mainVM.importFiles(intent.extractUris(), folderUri)
                                 finish()
                             }

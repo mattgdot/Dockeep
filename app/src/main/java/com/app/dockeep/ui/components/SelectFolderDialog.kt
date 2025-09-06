@@ -9,18 +9,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlin.collections.getOrNull
 
 @Composable
 fun SelectFolderDialog(
+    title: String,
     folders: List<Pair<String, Uri>>,
-    selectedIndex: Int,
-    onFolderSelected: (Int) -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
-    title: String
 ) {
+    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+
     AlertDialog(
         icon = {
             Icon(Icons.Default.Add, contentDescription = null)
@@ -34,13 +39,15 @@ fun SelectFolderDialog(
                 items = folders,
                 selectedIndex = selectedIndex,
                 selectedItemToString = { it.first },
-                onItemSelected = { index, _ -> onFolderSelected(index) },
+                onItemSelected = { index, _ -> selectedIndex = index },
                 modifier = Modifier.padding(10.dp)
             )
         },
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            TextButton(onClick = {
+                onConfirm(folders.getOrNull(selectedIndex)?.second?.toString() ?: "")
+            }) {
                 Text("Done")
             }
         },
