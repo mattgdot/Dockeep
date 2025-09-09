@@ -1,4 +1,4 @@
-# dockeep
+# Dockeep
 ## Keep what matters. Save what's yours. 
 Never lose important documents. Dockeep helps you organize and manage them with simplicity and ease of use in mind.
 
