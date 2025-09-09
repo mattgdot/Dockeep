@@ -192,4 +192,24 @@ class FilesRepositoryImpl @Inject constructor(
     override suspend fun moveDocument(uri: Uri, destination: Uri) {
 
     }
+
+    override suspend fun searchFiles(query: String, root:Uri): List<DocumentItem> {
+        val targetDir = DocumentFile.fromTreeUri(context, root) ?: return emptyList()
+        val result = mutableListOf<DocumentItem>()
+
+        val files = listFilesInDirectory(targetDir.uri)
+
+        println(query)
+
+        files.forEach {
+            println(it.name)
+            if(it.isFolder){
+                result += searchFiles(query, it.uri)
+            } else if(it.name.lowercase().contains(query.lowercase())) {
+                result += it
+            }
+        }
+
+        return result
+    }
 }

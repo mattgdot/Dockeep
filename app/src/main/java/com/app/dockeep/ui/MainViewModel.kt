@@ -4,7 +4,9 @@ import android.app.Activity
 import android.app.Application
 import android.net.Uri
 import androidx.activity.result.ActivityResult
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,9 +15,14 @@ import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
 import com.app.dockeep.utils.Constants.SORT_TYPE_KEY
+import com.app.dockeep.utils.Constants.THEME_KEY
 import com.app.dockeep.utils.Helper.extractUris
+import com.app.dockeep.utils.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -33,8 +40,13 @@ class MainViewModel @Inject constructor(
     var folders = mutableStateOf(listOf<Pair<String, Uri>>())
     val loading = mutableStateOf(false)
     var launched = false
+    //var theme = mutableStateOf(ThemeMode.AUTO)
+    private val _theme = MutableStateFlow(ThemeMode.AUTO) // Valoare inițială
+    val theme: StateFlow<ThemeMode> = _theme.asStateFlow()
 
     init {
+        println("init")
+        getAppTheme()
         viewModelScope.launch(Dispatchers.IO) {
             getContentPathUri()?.let { uri ->
                 loadFiles(uri)
@@ -44,12 +56,20 @@ class MainViewModel @Inject constructor(
 
     suspend fun getContentPathUri(): String? = prefRepo.getString(CONTENT_PATH_KEY)
 
-    fun getSortType(): String = runBlocking {  prefRepo.getString(SORT_TYPE_KEY)  ?: "Name A - Z"}
+    fun getSortType(): String = runBlocking { prefRepo.getString(SORT_TYPE_KEY) ?: "Name A - Z" }
 
-    fun setSortType(type: String){
+    fun setSortType(type: String) {
         viewModelScope.launch {
             prefRepo.putString(SORT_TYPE_KEY, type)
-            println(type)
+        }
+    }
+
+    fun getAppTheme() = runBlocking{ prefRepo.getString(THEME_KEY)?.let { _theme.value= ThemeMode.valueOf(it) } ?: ThemeMode.AUTO }
+
+    fun setAppTheme(th: ThemeMode) {
+        viewModelScope.launch {
+            _theme.value = th
+            prefRepo.putString(THEME_KEY, th.name)
         }
     }
 
@@ -117,6 +137,25 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun searchFiles(query: String, parent: String) {
+        viewModelScope.launch {
+            if (query.isNotBlank()) {
+                val result = withContext(Dispatchers.IO) {
+                    filesRepo.searchFiles(
+                        query, getContentPathUri()?.toUri() ?: Uri.EMPTY
+                    )
+                }
+                withContext(Dispatchers.Main) {
+                    files.value = result
+                }
+
+            } else {
+                loadFiles(parent)
+            }
+
+        }
+    }
+
     fun createFolder(parent: String = "", name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val folder = resolveFolderUri(parent)
@@ -141,51 +180,33 @@ class MainViewModel @Inject constructor(
 
         when (type) {
             "Name A - Z" -> {
-                files.value = files.value
-                    .sortedWith(
-                        compareByDescending<DocumentItem> { it.isFolder }
-                            .thenBy { if (!it.isFolder) it.name.first() else "" }
-                    )
+                files.value =
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.name.first() else "" })
             }
 
             "Name Z - A" -> {
-                files.value = files.value
-                    .sortedWith(
-                        compareByDescending<DocumentItem> { it.isFolder }
-                            .thenByDescending { if (!it.isFolder) it.name.first() else "" }
-                    )
+                files.value =
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.name.first() else "" })
             }
 
             "Largest first" -> {
-                files.value = files.value
-                    .sortedWith(
-                        compareByDescending<DocumentItem> { it.isFolder }
-                            .thenByDescending { if (!it.isFolder) it.size else 0L }
-                    )
+                files.value =
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.size else 0L })
             }
 
             "Smallest first" -> {
-                files.value = files.value
-                    .sortedWith(
-                        compareByDescending<DocumentItem> { it.isFolder }
-                            .thenBy { if (!it.isFolder) it.size else Long.MAX_VALUE }
-                    )
+                files.value =
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.size else Long.MAX_VALUE })
             }
 
             "Newest first" -> {
-                files.value = files.value
-                    .sortedWith(
-                        compareByDescending<DocumentItem> { it.isFolder }
-                            .thenByDescending { if (!it.isFolder) it.date else Long.MIN_VALUE }
-                    )
+                files.value =
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.date else Long.MIN_VALUE })
             }
 
             "Oldest first" -> {
-                files.value = files.value
-                    .sortedWith(
-                        compareByDescending<DocumentItem> { it.isFolder }
-                            .thenBy { if (!it.isFolder) it.date else Long.MAX_VALUE }
-                    )
+                files.value =
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.date else Long.MAX_VALUE })
             }
         }
     }

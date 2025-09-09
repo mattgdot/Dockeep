@@ -1,11 +1,16 @@
 package com.app.dockeep.ui.screens.files
 
 import android.content.Intent
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,15 +26,18 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.ui.MainViewModel
+import com.app.dockeep.ui.components.AppSearchBar
 import com.app.dockeep.ui.components.LoadingDialog
 import com.app.dockeep.ui.components.OptionsBottomSheet
 import com.app.dockeep.ui.components.SortBottomSheet
@@ -48,12 +56,13 @@ import com.app.dockeep.utils.Helper.shareDocument
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilesScreen(
-    mainVM: MainViewModel = hiltViewModel(),
     path: String,
     uri: String,
     navController: NavController,
     onNavigate: (uri: String, path: String) -> Unit
 ) {
+    val     mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
+
     val contentPathLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             mainVM.setContentPathUri(result)
@@ -79,7 +88,9 @@ fun FilesScreen(
     val filesList by mainVM.files
     val dirList by mainVM.folders
     val loading by mainVM.loading
-
+    var queryString by remember {
+        mutableStateOf("")
+    }
     var isInSelectionMode by remember {
         mutableStateOf(false)
     }
@@ -110,6 +121,11 @@ fun FilesScreen(
         if (isInSelectionMode && selectedItems.isEmpty()) {
             isInSelectionMode = false
         }
+    }
+
+    BackHandler(navController.previousBackStackEntry != null || isInSelectionMode) {
+        if (isInSelectionMode) resetSelectionMode()
+        else navController.popBackStack()
     }
 
     Scaffold(
@@ -152,26 +168,22 @@ fun FilesScreen(
 
         ) { innerPadding ->
 
-        BackHandler(navController.previousBackStackEntry != null || isInSelectionMode) {
-            if (isInSelectionMode) resetSelectionMode()
-            else navController.popBackStack()
-        }
 
         LaunchedEffect(lifecycleState) {
             if (lifecycleState == Lifecycle.State.RESUMED) {
                 if (mainVM.getContentPathUri().isNullOrBlank() || !mainVM.rootExists()) {
-                    if(!mainVM.launched) {
+                    if (!mainVM.launched) {
                         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                         contentPathLauncher.launch(intent)
                     }
-                } else {
+                } else if(queryString.isBlank()) {
                     mainVM.loadFiles(uri)
                     resetSelectionMode()
                 }
             }
         }
 
-        if(showSortSheet) {
+        if (showSortSheet) {
             SortBottomSheet(
                 initial = mainVM.getSortType(),
                 onDismiss = {
@@ -220,7 +232,7 @@ fun FilesScreen(
                 showConfirmDelete = false
                 resetSelectionMode()
             },
-            dismissDelete = {showConfirmDelete = false},
+            dismissDelete = { showConfirmDelete = false },
             showCreateFolder = showCreateFolderDialog,
             onCreateFolderConfirm = {
                 mainVM.createFolder(
@@ -228,7 +240,7 @@ fun FilesScreen(
                 )
                 showCreateFolderDialog = false
             },
-            dismissCreateFolder = {showCreateFolderDialog  = false},
+            dismissCreateFolder = { showCreateFolderDialog = false },
             showRename = showRenameFileDialog,
             onConfirmRename = {
                 selectedItem?.uri?.let { doc ->
@@ -238,7 +250,7 @@ fun FilesScreen(
                 }
                 showRenameFileDialog = false
             },
-            dismissRename = {showRenameFileDialog = false},
+            dismissRename = { showRenameFileDialog = false },
             showMove = showMoveDialog,
             onMoveConfirm = { folderUri ->
                 mainVM.importFiles(
@@ -247,17 +259,25 @@ fun FilesScreen(
                 showMoveDialog = false
                 resetSelectionMode()
             },
-            dismissMove = {showMoveDialog = false},
+            dismissMove = { showMoveDialog = false },
             dirList = dirList,
             rootUri = uri,
             removeOnMove = removeOnMove
         )
 
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            AppSearchBar(
+                onSearch = {
+                    queryString = it
+                    mainVM.searchFiles(it, uri)
+                },
+                query = queryString
+            )
+
             if (loading) {
                 LoadingDialog()
             }
@@ -265,46 +285,55 @@ fun FilesScreen(
                 FilesEmptyState()
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                if (isInSelectionMode) {
-                    item {
-                        SelectAllCheckbox { isChecked ->
-                            if (isChecked) {
-                                selectedItems.removeAll(filesList)
-                                val itemsToAdd = filesList.filterNot { it in selectedItems }
-                                selectedItems.addAll(itemsToAdd)
-                            } else selectedItems.removeAll(filesList)
+            Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (isInSelectionMode) {
+                        item {
+                            SelectAllCheckbox { isChecked ->
+                                if (isChecked) {
+                                    selectedItems.removeAll(filesList)
+                                    val itemsToAdd = filesList.filterNot { it in selectedItems }
+                                    selectedItems.addAll(itemsToAdd)
+                                } else selectedItems.removeAll(filesList)
+                            }
                         }
                     }
-                }
 
-                items(filesList) { item ->
-                    val isSelected = selectedItems.contains(item)
-                    FileListItem(
-                        item = item,
-                        onClick = {
-                            if (item.isFolder) onNavigate(item.uri.toString(), item.name)
-                            else context.openDocument(item.uri, item.mimeType)
-                        },
-                        onMoreClick = {
-                            selectedItem = item
-                            showOptionsSheet = true
-                        },
-                        isSelected = isSelected,
-                        selectionMode = isInSelectionMode,
-                        addToSelected = {
-                            selectedItems.add(item)
-                        },
-                        removeFromSelected = {
-                            selectedItems.remove(item)
-                        },
-                        onLongClick = {
-                            isInSelectionMode = true
-                            selectedItems.add(item)
-                        },
-                    )
+                    item {
+                        Spacer(
+                            modifier = Modifier.height(20.dp)
+                        )
+                    }
+
+                    items(filesList) { item ->
+                        val isSelected = selectedItems.contains(item)
+                        FileListItem(
+                            item = item,
+                            onClick = {
+                                if (item.isFolder) onNavigate(item.uri.toString(), item.name)
+                                else context.openDocument(item.uri, item.mimeType)
+                            },
+                            onMoreClick = {
+                                selectedItem = item
+                                showOptionsSheet = true
+                            },
+                            isSelected = isSelected,
+                            selectionMode = isInSelectionMode,
+                            addToSelected = {
+                                selectedItems.add(item)
+                            },
+                            removeFromSelected = {
+                                selectedItems.remove(item)
+                            },
+                            onLongClick = {
+                                isInSelectionMode = true
+                                selectedItems.add(item)
+                            },
+                        )
+                    }
                 }
             }
         }
