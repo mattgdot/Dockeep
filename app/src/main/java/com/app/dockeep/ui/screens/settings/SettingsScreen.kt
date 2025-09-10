@@ -2,7 +2,6 @@ package com.app.dockeep.ui.screens.settings
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -12,15 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,16 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.app.dockeep.utils.Helper.getAppName
-import com.app.dockeep.utils.Helper.getAppVersion
-import java.net.URLEncoder
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.dockeep.ui.MainViewModel
 import com.app.dockeep.ui.components.ThemeSelectionDialog
+import com.app.dockeep.utils.Helper.getAppVersion
 import com.app.dockeep.utils.ThemeMode
 
 
@@ -57,6 +50,8 @@ fun SettingsScreen(
     onGoBack: () -> Unit,
 ) {
     val mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
+    val theme by mainVM.theme.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Settings") }, navigationIcon = {
@@ -172,7 +167,7 @@ fun SettingsScreen(
                 ThemeSelectionDialog(
                     onDismiss = { openThemeDialog = false }, onSubmit = { theme ->
                         mainVM.setAppTheme(theme)
-                    }, themeOptions = themeOptions, initialTheme = themeOptions[0]
+                    }, themeOptions = themeOptions, initialTheme = theme
                 )
             }
 

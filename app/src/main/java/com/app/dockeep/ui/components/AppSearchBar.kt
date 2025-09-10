@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,7 +56,7 @@ fun AppSearchBar(
                 expanded = false,
                 onExpandedChange = {  },
                 placeholder = {
-                    Text(text = "Search")
+                    Text(text = "Search", fontSize = TextUnit(15f, TextUnitType.Sp),)
                 },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null)

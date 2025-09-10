@@ -9,8 +9,8 @@ import android.os.Build
 import android.widget.Toast
 import androidx.core.content.pm.PackageInfoCompat
 import com.app.dockeep.model.AppVersion
-import java.lang.Exception
 import java.text.DecimalFormat
+import java.util.concurrent.TimeUnit
 import kotlin.math.log10
 import kotlin.math.pow
 
@@ -112,4 +112,38 @@ object Helper {
 
         return "${decimalFormat.format(valueInUnit)} ${units[unitIndex]}"
     }
+
+    fun getTimeAgo(time: Long): String {
+        val timestamp = if (time < 1_000_000_000_000L) time * 1000 else time
+
+        val now = System.currentTimeMillis()
+        if (timestamp > now || timestamp <= 0) return "in the future"
+
+        val diff = now - timestamp
+
+        return when {
+            diff < TimeUnit.MINUTES.toMillis(1) -> "Just now"
+            diff < TimeUnit.HOURS.toMillis(1) -> {
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+                "$minutes minute${if (minutes > 1) "s" else ""} ago"
+            }
+            diff < TimeUnit.DAYS.toMillis(1) -> {
+                val hours = TimeUnit.MILLISECONDS.toHours(diff)
+                "$hours hour${if (hours > 1) "s" else ""} ago"
+            }
+            diff < TimeUnit.DAYS.toMillis(30) -> {
+                val days = TimeUnit.MILLISECONDS.toDays(diff)
+                "$days day${if (days > 1) "s" else ""} ago"
+            }
+            diff < TimeUnit.DAYS.toMillis(365) -> {
+                val months = TimeUnit.MILLISECONDS.toDays(diff) / 30
+                "$months month${if (months > 1) "s" else ""} ago"
+            }
+            else -> {
+                val years = TimeUnit.MILLISECONDS.toDays(diff) / 365
+                "$years year${if (years > 1) "s" else ""} ago"
+            }
+        }
+    }
+
 }

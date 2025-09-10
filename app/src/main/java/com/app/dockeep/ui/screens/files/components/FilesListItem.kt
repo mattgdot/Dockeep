@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -15,7 +14,6 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,8 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.app.dockeep.model.DocumentItem
+import com.app.dockeep.utils.Helper.getTimeAgo
 import com.app.dockeep.utils.Helper.humanReadableSize
 
 @Composable
@@ -49,28 +51,41 @@ fun FileListItem(
                 item.name,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
+                fontSize = TextUnit(16f, TextUnitType.Sp),
                 fontWeight = if (item.isFolder) FontWeight.Bold else FontWeight.Normal
             )
         },
         supportingContent = {
             Text(
-                if (item.isFolder) "Folder" else "${humanReadableSize(item.size!!)} • ${item.mimeType}",
+                if (item.isFolder) "Folder" else "${humanReadableSize(item.size!!)} • ${getTimeAgo(item.date!!)}",
                 overflow = TextOverflow.Ellipsis,
-                maxLines = 1
+                maxLines = 1,
+                fontSize = TextUnit(12f, TextUnitType.Sp),
             )
         },
         leadingContent = {
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .size(50.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        if (item.isFolder) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
-                        contentDescription = null
-                    )
+                    if(item.isFolder) {
+                        Icon(
+                            Icons.Default.Folder,
+                            contentDescription = null
+                        )
+                    } else {
+                        var ext = item.mimeType.substringAfter("/")
+                        if(ext.length > 5 || ext.isEmpty()) ext = item.name.substringAfter(".")
+                        Text(
+                            text = ext,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
 
         },
@@ -94,8 +109,8 @@ fun FileListItem(
             }
         },
         modifier = Modifier
-            .padding(vertical = 5.dp)
             .clip(RoundedCornerShape(16.dp))
+            .padding(2.dp)
             .combinedClickable(
                 onClick = {
                     if (selectionMode) {
