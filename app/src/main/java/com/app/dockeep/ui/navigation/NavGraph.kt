@@ -2,8 +2,8 @@ package com.app.dockeep.ui.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.app.dockeep.ui.screens.files.FilesScreen
 import com.app.dockeep.ui.screens.settings.SettingsScreen
@@ -45,5 +45,9 @@ fun NavGraph(navController: NavHostController) {
                 }
             )
         }
+
+//        composable(LOCK_ROUTE) {
+//           // LockScreen()
+//        }
     }
 }

@@ -8,6 +8,7 @@ object Constants {
     const val URI_ARG = "uri"
     const val CONTENT_PATH_KEY = "CONTENT_PATH_URI"
     const val SORT_TYPE_KEY = "SORT_TYPE"
+    const val LOCK_KEY = "LOCK"
     const val THEME_KEY = "THEME"
     const val UNK = "unknown"
     const val OCTET_STREAM = "application/octet-stream"

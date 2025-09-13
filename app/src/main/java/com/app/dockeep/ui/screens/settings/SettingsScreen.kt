@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -51,6 +52,8 @@ fun SettingsScreen(
 ) {
     val mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
     val theme by mainVM.theme.collectAsState()
+    val lock by mainVM.lockChecked
+    var lockChecked by  remember { mutableStateOf(lock) }
 
     Scaffold(
         topBar = {
@@ -83,6 +86,7 @@ fun SettingsScreen(
                         .fillMaxSize()
                         .padding(top = 15.dp)
                 ) {
+
                     ListItem(headlineContent = {
                         Text(text = "App Theme")
                     }, leadingContent = {
@@ -160,6 +164,20 @@ fun SettingsScreen(
                             ).show()
                         }
                     })
+
+//                    ListItem(headlineContent = {
+//                        Text(text = "Lock with biometrics")
+//                    }, trailingContent = {
+//                        Switch(
+//                            checked = lockChecked,
+//                            onCheckedChange = { checked ->
+//                                lockChecked = checked
+//                                mainVM.setAppLock(checked)
+//                            }
+//                        )
+//                    }, modifier = Modifier.clickable {
+//                        openThemeDialog = true
+//                    })
                 }
             }
 

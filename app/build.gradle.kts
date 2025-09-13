@@ -81,4 +81,5 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.biometric)
 }

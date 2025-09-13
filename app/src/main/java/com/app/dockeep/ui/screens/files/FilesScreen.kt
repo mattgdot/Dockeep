@@ -170,6 +170,7 @@ fun FilesScreen(
 
 
         LaunchedEffect(lifecycleState) {
+
             if (lifecycleState == Lifecycle.State.RESUMED) {
                 if (mainVM.getContentPathUri().isNullOrBlank() || !mainVM.rootExists()) {
                     if (!mainVM.launched) {

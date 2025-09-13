@@ -14,6 +14,7 @@ import com.app.dockeep.data.files.FilesRepository
 import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
+import com.app.dockeep.utils.Constants.LOCK_KEY
 import com.app.dockeep.utils.Constants.SORT_TYPE_KEY
 import com.app.dockeep.utils.Constants.THEME_KEY
 import com.app.dockeep.utils.Helper.extractUris
@@ -41,12 +42,14 @@ class MainViewModel @Inject constructor(
     val loading = mutableStateOf(false)
     var launched = false
     //var theme = mutableStateOf(ThemeMode.AUTO)
-    private val _theme = MutableStateFlow(ThemeMode.AUTO) // Valoare inițială
+    private val _theme = MutableStateFlow(ThemeMode.AUTO)
     val theme: StateFlow<ThemeMode> = _theme.asStateFlow()
 
+    val lockChecked = mutableStateOf(false)
+
     init {
-        println("init")
         getAppTheme()
+        getAppLock()
         viewModelScope.launch(Dispatchers.IO) {
             getContentPathUri()?.let { uri ->
                 loadFiles(uri)
@@ -70,6 +73,15 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _theme.value = th
             prefRepo.putString(THEME_KEY, th.name)
+        }
+    }
+
+    fun getAppLock() = runBlocking{ lockChecked.value = prefRepo.getBool(LOCK_KEY) ?: false}
+
+    fun setAppLock(bool: Boolean) {
+        viewModelScope.launch {
+            prefRepo.putBool(LOCK_KEY, bool)
+            lockChecked.value = bool
         }
     }
 
