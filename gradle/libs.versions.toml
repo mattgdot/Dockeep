@@ -15,6 +15,7 @@ ksp = "2.2.0-2.0.2"
 documentfile = "1.1.0"
 navComp = "2.9.3"
 biometric="1.4.0-alpha02"
+pager = "1.7.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,6 +40,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 androidx-material-icons-extended = {group = "androidx.compose.material", name = "material-icons-extended"}
 biometric = {group="androidx.biometric", name="biometric-ktx", version.ref="biometric"}
+foundation-pager = { group = "androidx.compose.foundation", name = "foundation", version.ref = "pager" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

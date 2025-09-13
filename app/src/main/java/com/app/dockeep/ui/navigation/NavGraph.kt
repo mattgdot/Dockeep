@@ -6,17 +6,20 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.app.dockeep.ui.screens.files.FilesScreen
+import com.app.dockeep.ui.screens.onboard.OnboardingScreen
 import com.app.dockeep.ui.screens.settings.SettingsScreen
 import com.app.dockeep.utils.Constants.FILES_DIR
 import com.app.dockeep.utils.Constants.FILES_ROUTE
+import com.app.dockeep.utils.Constants.GUIDE_ROUTE
 import com.app.dockeep.utils.Constants.PATH_ARG
 import com.app.dockeep.utils.Constants.SETTINGS_ROUTE
 import com.app.dockeep.utils.Constants.URI_ARG
 
 
 @Composable
-fun NavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = "${FILES_ROUTE}/${FILES_DIR}/") {
+fun NavGraph(navController: NavHostController, firstStart: Boolean) {
+    var startRoute = if(firstStart) GUIDE_ROUTE else "${FILES_ROUTE}/${FILES_DIR}/"
+    NavHost(navController = navController, startDestination = startRoute) {
         composable("$FILES_ROUTE/{${PATH_ARG}}/{${URI_ARG}}") { navBackStackEntry ->
             val path = navBackStackEntry.arguments?.getString(PATH_ARG).orEmpty()
 
@@ -46,8 +49,16 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-//        composable(LOCK_ROUTE) {
-//           // LockScreen()
-//        }
+        composable(GUIDE_ROUTE) {
+            OnboardingScreen(
+                onDone = {
+                    navController.navigate("${FILES_ROUTE}/${FILES_DIR}/") {
+                        popUpTo(GUIDE_ROUTE) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
     }
 }

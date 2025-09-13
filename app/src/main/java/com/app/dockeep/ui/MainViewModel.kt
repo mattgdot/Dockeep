@@ -4,9 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.net.Uri
 import androidx.activity.result.ActivityResult
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,7 +12,7 @@ import com.app.dockeep.data.files.FilesRepository
 import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
-import com.app.dockeep.utils.Constants.LOCK_KEY
+import com.app.dockeep.utils.Constants.FIRST_START_KEY
 import com.app.dockeep.utils.Constants.SORT_TYPE_KEY
 import com.app.dockeep.utils.Constants.THEME_KEY
 import com.app.dockeep.utils.Helper.extractUris
@@ -45,11 +43,11 @@ class MainViewModel @Inject constructor(
     private val _theme = MutableStateFlow(ThemeMode.AUTO)
     val theme: StateFlow<ThemeMode> = _theme.asStateFlow()
 
-    val lockChecked = mutableStateOf(false)
+    val firstStart = mutableStateOf(true)
 
     init {
         getAppTheme()
-        getAppLock()
+        getFirstStart()
         viewModelScope.launch(Dispatchers.IO) {
             getContentPathUri()?.let { uri ->
                 loadFiles(uri)
@@ -76,12 +74,12 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun getAppLock() = runBlocking{ lockChecked.value = prefRepo.getBool(LOCK_KEY) ?: false}
+    fun getFirstStart() = runBlocking{ firstStart.value = prefRepo.getBool(FIRST_START_KEY) ?: true}
 
-    fun setAppLock(bool: Boolean) {
+    fun setFirstStart(bool: Boolean) {
         viewModelScope.launch {
-            prefRepo.putBool(LOCK_KEY, bool)
-            lockChecked.value = bool
+            prefRepo.putBool(FIRST_START_KEY, bool)
+            firstStart.value = bool
         }
     }
 
@@ -106,6 +104,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             filesRepo.setRootLocation(uri).toString().let {
                 prefRepo.putString(CONTENT_PATH_KEY, it)
+                setFirstStart(false)
                 loadFiles(getContentPathUri() ?: "")
             }
         }

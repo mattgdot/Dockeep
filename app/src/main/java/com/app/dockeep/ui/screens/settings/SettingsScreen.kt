@@ -6,6 +6,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
@@ -23,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -52,8 +54,11 @@ fun SettingsScreen(
 ) {
     val mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
     val theme by mainVM.theme.collectAsState()
-    val lock by mainVM.lockChecked
-    var lockChecked by  remember { mutableStateOf(lock) }
+
+    val contentPathLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            mainVM.setContentPathUri(result)
+        }
 
     Scaffold(
         topBar = {
@@ -86,6 +91,14 @@ fun SettingsScreen(
                         .fillMaxSize()
                         .padding(top = 15.dp)
                 ) {
+
+                    ListItem(headlineContent = {
+                        Text(text = "Save location")
+                    }, leadingContent = {
+                        Icon(Icons.Outlined.Folder, contentDescription = null)
+                    }, modifier = Modifier.clickable {
+                        contentPathLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                    })
 
                     ListItem(headlineContent = {
                         Text(text = "App Theme")
@@ -165,19 +178,6 @@ fun SettingsScreen(
                         }
                     })
 
-//                    ListItem(headlineContent = {
-//                        Text(text = "Lock with biometrics")
-//                    }, trailingContent = {
-//                        Switch(
-//                            checked = lockChecked,
-//                            onCheckedChange = { checked ->
-//                                lockChecked = checked
-//                                mainVM.setAppLock(checked)
-//                            }
-//                        )
-//                    }, modifier = Modifier.clickable {
-//                        openThemeDialog = true
-//                    })
                 }
             }
 

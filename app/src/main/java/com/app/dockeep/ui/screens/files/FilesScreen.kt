@@ -61,7 +61,7 @@ fun FilesScreen(
     navController: NavController,
     onNavigate: (uri: String, path: String) -> Unit
 ) {
-    val     mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
+    val mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
 
     val contentPathLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
