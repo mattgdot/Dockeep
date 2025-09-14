@@ -38,11 +38,11 @@ class FilesRepositoryImpl @Inject constructor(
 
         for (uri in files) {
             val target = DocumentFile.fromSingleUri(context, uri)
-            if(target?.isDirectory == false) {
+            if (target?.isDirectory == false) {
                 try {
                     persistUriPermissions(uri)
                 } catch (e: Exception) {
-                  //  Log.e("FilesRepository", "Failed to persist URI permission for $uri", e)
+                    Log.e("FilesRepository", "Failed to persist URI permission for $uri", e)
                 }
 
                 var displayName = UNK
@@ -81,15 +81,15 @@ class FilesRepositoryImpl @Inject constructor(
                 target?.let { iuri ->
                     val nuri = createDirectory(folderUri, iuri.name!!)
                     val files = listFilesInDirectory(iuri.uri)
-                  //  if(files.isNotEmpty())
-                        copyFilesToFolder(nuri, files.map { it.uri })
+                    //  if(files.isNotEmpty())
+                    copyFilesToFolder(nuri, files.map { it.uri })
                 }
             }
         }
     }
 
     override suspend fun listFilesInDirectory(folderUri: Uri): List<DocumentItem> {
-        
+
         val files = mutableListOf<DocumentItem>()
 
         val targetDir = DocumentFile.fromTreeUri(context, folderUri) ?: return emptyList()
@@ -109,7 +109,7 @@ class FilesRepositoryImpl @Inject constructor(
             DocumentsContract.Document.COLUMN_LAST_MODIFIED
         )
 
-        if(!pathExists(targetDir.uri)) return emptyList()
+        if (!pathExists(targetDir.uri)) return emptyList()
 
         contentResolver.query(childrenUri, projection, null, null, null)?.use { cursor ->
             val docIdIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
@@ -156,10 +156,11 @@ class FilesRepositoryImpl @Inject constructor(
         val targetDir = DocumentFile.fromTreeUri(context, root) ?: return emptyList()
         val result = mutableListOf<Pair<String, Uri>>()
 
-        val fileName = if (parent.isEmpty()) targetDir.name ?: UNK else "$parent/${targetDir.name ?: UNK}"
+        val fileName =
+            if (parent.isEmpty()) targetDir.name ?: UNK else "$parent/${targetDir.name ?: UNK}"
 
         if (targetDir.isDirectory) {
-            result.add(fileName to targetDir.uri)
+            result.add(fileName to root)
         }
 
         targetDir.listFiles()
@@ -193,7 +194,7 @@ class FilesRepositoryImpl @Inject constructor(
 
     }
 
-    override suspend fun searchFiles(query: String, root:Uri): List<DocumentItem> {
+    override suspend fun searchFiles(query: String, root: Uri): List<DocumentItem> {
         val targetDir = DocumentFile.fromTreeUri(context, root) ?: return emptyList()
         val result = mutableListOf<DocumentItem>()
 
@@ -203,9 +204,9 @@ class FilesRepositoryImpl @Inject constructor(
 
         files.forEach {
             println(it.name)
-            if(it.isFolder){
+            if (it.isFolder) {
                 result += searchFiles(query, it.uri)
-            } else if(it.name.lowercase().contains(query.lowercase())) {
+            } else if (it.name.lowercase().contains(query.lowercase())) {
                 result += it
             }
         }

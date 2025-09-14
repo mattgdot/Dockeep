@@ -2,7 +2,6 @@ package com.app.dockeep.ui.screens.onboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,12 +49,12 @@ fun OnboardingScreen(
         ),
         OnBoardModel(
             title = "Share to Import",
-            description = "Import any files in seconds by sharing from other apps. Dockeep keeps it simple.",
+            description = "Import files instantly — just share from any app. Dockeep makes it easy.",
             icon = Icons.Default.Share
         ),
         OnBoardModel(
             title = "Set Dockeep Location",
-            description = "Choose where Dockeep saves your files. This can be changed later.",
+            description = "Pick your Dockeep storage location. Change it anytime.",
             icon = Icons.Default.Folder
         )
     )
@@ -89,7 +88,7 @@ fun OnboardingScreen(
             ) {
 
 
-                TextButton (
+                TextButton(
                     onClick = {
                         val skipPage = pagerState.pageCount - 1
                         coroutineScope.launch { pagerState.animateScrollToPage(skipPage) }
@@ -140,7 +139,7 @@ fun OnboardingScreen(
                         )
                     }
                 } else {
-                    TextButton (
+                    TextButton(
                         onClick = {
                             if (pagerState.currentPage < 2) {
                                 val nextPage = pagerState.currentPage + 1

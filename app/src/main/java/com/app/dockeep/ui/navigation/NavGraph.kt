@@ -18,7 +18,7 @@ import com.app.dockeep.utils.Constants.URI_ARG
 
 @Composable
 fun NavGraph(navController: NavHostController, firstStart: Boolean) {
-    var startRoute = if(firstStart) GUIDE_ROUTE else "${FILES_ROUTE}/${FILES_DIR}/"
+    val startRoute = if(firstStart) GUIDE_ROUTE else "${FILES_ROUTE}/${FILES_DIR}/"
     NavHost(navController = navController, startDestination = startRoute) {
         composable("$FILES_ROUTE/{${PATH_ARG}}/{${URI_ARG}}") { navBackStackEntry ->
             val path = navBackStackEntry.arguments?.getString(PATH_ARG).orEmpty()

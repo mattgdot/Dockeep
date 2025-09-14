@@ -55,9 +55,12 @@ fun Dialogs(
 
     if (showMove) {
         val dirsFiltered = dirList.filterNot { fu ->
-            fu.second.toString() == rootUri || effectiveItems.any { fu.second.toString().startsWith(it.uri.toString()) }
+            fu.second.toString() == rootUri || effectiveItems.any {
+                fu.second.toString().startsWith(it.uri.toString())
+            }
+        }.toMutableList()
 
-        }
+        if (rootUri.isEmpty()) dirsFiltered.removeAt(0)
 
         SelectFolderDialog(
             title = if (removeOnMove) "Move" else "Copy",

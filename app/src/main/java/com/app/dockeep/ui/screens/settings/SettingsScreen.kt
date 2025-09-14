@@ -52,7 +52,7 @@ import com.app.dockeep.utils.ThemeMode
 fun SettingsScreen(
     onGoBack: () -> Unit,
 ) {
-    val mainVM:MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
+    val mainVM: MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
     val theme by mainVM.theme.collectAsState()
 
     val contentPathLauncher =
@@ -65,8 +65,7 @@ fun SettingsScreen(
             TopAppBar(title = { Text("Settings") }, navigationIcon = {
                 IconButton(onClick = onGoBack) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null
                     )
                 }
             })
@@ -138,8 +137,7 @@ fun SettingsScreen(
                         Icon(Icons.Outlined.Email, contentDescription = null)
                     }, modifier = Modifier.clickable {
                         val emailIntent = Intent(
-                            Intent.ACTION_SENDTO,
-                            "mailto:decosoftapps@gmail.com".toUri()
+                            Intent.ACTION_SENDTO, "mailto:decosoftapps@gmail.com".toUri()
                         )
                         try {
                             context.startActivity(emailIntent)
@@ -184,8 +182,8 @@ fun SettingsScreen(
             if (openThemeDialog) {
                 ThemeSelectionDialog(
                     onDismiss = { openThemeDialog = false }, onSubmit = { theme ->
-                        mainVM.setAppTheme(theme)
-                    }, themeOptions = themeOptions, initialTheme = theme
+                    mainVM.setAppTheme(theme)
+                }, themeOptions = themeOptions, initialTheme = theme
                 )
             }
 

@@ -3,10 +3,12 @@ package com.app.dockeep.ui
 import android.app.Activity
 import android.app.Application
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.app.dockeep.data.files.FilesRepository
 import com.app.dockeep.data.preferences.DataStoreRepository
@@ -26,7 +28,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import kotlin.collections.sortedWith
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -39,7 +40,7 @@ class MainViewModel @Inject constructor(
     var folders = mutableStateOf(listOf<Pair<String, Uri>>())
     val loading = mutableStateOf(false)
     var launched = false
-    //var theme = mutableStateOf(ThemeMode.AUTO)
+
     private val _theme = MutableStateFlow(ThemeMode.AUTO)
     val theme: StateFlow<ThemeMode> = _theme.asStateFlow()
 
@@ -65,7 +66,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun getAppTheme() = runBlocking{ prefRepo.getString(THEME_KEY)?.let { _theme.value= ThemeMode.valueOf(it) } ?: ThemeMode.AUTO }
+    fun getAppTheme() = runBlocking {
+        prefRepo.getString(THEME_KEY)?.let { _theme.value = ThemeMode.valueOf(it) }
+            ?: ThemeMode.AUTO
+    }
 
     fun setAppTheme(th: ThemeMode) {
         viewModelScope.launch {
@@ -74,7 +78,8 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun getFirstStart() = runBlocking{ firstStart.value = prefRepo.getBool(FIRST_START_KEY) ?: true}
+    fun getFirstStart() =
+        runBlocking { firstStart.value = prefRepo.getBool(FIRST_START_KEY) ?: true }
 
     fun setFirstStart(bool: Boolean) {
         viewModelScope.launch {
@@ -94,6 +99,12 @@ class MainViewModel @Inject constructor(
     private suspend fun setLoading(boolean: Boolean) {
         withContext(Dispatchers.Main) {
             loading.value = boolean
+        }
+    }
+
+    private suspend fun displayMessage(message: String) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(application, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -172,6 +183,7 @@ class MainViewModel @Inject constructor(
             val folder = resolveFolderUri(parent)
             filesRepo.createDirectory(folder, name)
             loadFiles(folder.toString())
+            displayMessage("Created successfully")
         }
     }
 
@@ -182,6 +194,7 @@ class MainViewModel @Inject constructor(
                 filesRepo.deleteDocument(doc)
             }
             loadFiles(folder)
+            displayMessage("Deleted successfully")
         }
     }
 
@@ -226,6 +239,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             filesRepo.renameDocument(doc, name)
             loadFiles(folder)
+            displayMessage("Renamed successfully")
         }
     }
 
@@ -250,6 +264,8 @@ class MainViewModel @Inject constructor(
 
             if (load) loadFiles(folderUri)
             if (remove) loadFiles(src.toString())
+
+            displayMessage("Done")
         }
     }
 }

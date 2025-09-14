@@ -271,13 +271,15 @@ fun FilesScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            AppSearchBar(
-                onSearch = {
-                    queryString = it
-                    mainVM.searchFiles(it, uri)
-                },
-                query = queryString
-            )
+            if(!isInSelectionMode) {
+                AppSearchBar(
+                    onSearch = {
+                        queryString = it
+                        mainVM.searchFiles(it, uri)
+                    },
+                    query = queryString
+                )
+            }
 
             if (loading) {
                 LoadingDialog()
