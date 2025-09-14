@@ -1,0 +1,13 @@
+Dockeep – Your Pocket for Files
+
+Tired of losing track of important files on your phone? PDFs, ID copies, class notes, or anything shared with you often get buried in Downloads, WhatsApp or email attachments. 
+I built this app as a student who wanted a simple, private way to keep everything organized and easy to access.
+
+With Dockeep, you can share any file from any app directly into a folder you choose. It’s like a pocket for your files: quick to save, easy to search, and always under your control.
+
+Key features
+- Share files from any app into your own folders
+- Search to find files instantly
+- Keep everything private, local, and ad-free
+
+It’s free, open-source, and still early, but I’d love to keep improving it with feedback or contributions.
