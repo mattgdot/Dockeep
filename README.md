@@ -18,3 +18,13 @@ It’s free, open-source, and still early, but I’m happy to keep improving it 
 - Jetpack Compose
 - Dagger Hilt
 - Shared Object Framework for file handling
+
+## Screenshots
+<p align="center">
+  <img src="metadata/en-US/images/phoneScreenshots/ss1.jpg" width="240">
+  <img src="metadata/en-US/images/phoneScreenshots/ss2.jpg" width="240">
+  <img src="metadata/en-US/images/phoneScreenshots/ss3.jpg" width="240">
+  <img src="metadata/en-US/images/phoneScreenshots/ss4.jpg" width="240">
+  <img src="metadata/en-US/images/phoneScreenshots/ss5.jpg" width="240">
+  <img src="metadata/en-US/images/phoneScreenshots/ss6.jpg" width="240">
+</p>
