@@ -16,8 +16,8 @@ android {
         applicationId = "com.app.dockeep"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.9-beta"
+        versionCode = 2
+        versionName = "1.0-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
