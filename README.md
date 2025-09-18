@@ -17,7 +17,7 @@ It’s free, open-source, and still early, but I’m happy to keep improving it 
 - Kotlin
 - Jetpack Compose
 - Dagger Hilt
-- Shared Object Framework for file handling
+- Storage Access Framework for file handling
 
 ## Screenshots
 <p align="center">
