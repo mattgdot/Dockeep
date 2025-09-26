@@ -43,6 +43,7 @@ fun SortBottomSheet(
         var selectedOption by remember { mutableStateOf(initial) }
 
         Column(Modifier.selectableGroup()) {
+            Text("Sort by", modifier=Modifier.padding(10.dp))
             radioOptions.forEach { text ->
                 Row(
                     Modifier

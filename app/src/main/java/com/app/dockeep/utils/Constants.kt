@@ -9,7 +9,7 @@ object Constants {
     const val URI_ARG = "uri"
     const val CONTENT_PATH_KEY = "CONTENT_PATH_URI"
     const val SORT_TYPE_KEY = "SORT_TYPE"
-    const val LOCK_KEY = "LOCK"
+    const val DELETE_KEY = "DELETE"
     const val FIRST_START_KEY = "FIRST_START"
     const val THEME_KEY = "THEME"
     const val UNK = "unknown"

@@ -24,8 +24,10 @@ fun Dialogs(
     removeOnMove: Boolean,
     dirList: List<Pair<String, Uri>>,
     rootUri: String,
-
     effectiveItems: List<DocumentItem>,
+    showArchive: Boolean,
+    dismissArchive:()->Unit,
+    onArchiveConfirm: (String) -> Unit,
 ) {
     if (showConfirmDelete) {
         ConfirmActionDialog(
@@ -44,12 +46,20 @@ fun Dialogs(
         )
     }
 
-    if (showRename) {
+    if (showCreateFolder) {
         TextInputDialog(
-            title = "Rename",
-            initialText = effectiveItems[0].name,
-            onDismiss = dismissRename,
-            onConfirm = onConfirmRename,
+            title = "Create Folder",
+            onDismiss = dismissCreateFolder,
+            onConfirm = onCreateFolderConfirm,
+        )
+    }
+
+    if (showArchive) {
+        TextInputDialog(
+            title = "Name zip file",
+            initialText = "",
+            onDismiss = dismissArchive,
+            onConfirm = onArchiveConfirm,
         )
     }
 

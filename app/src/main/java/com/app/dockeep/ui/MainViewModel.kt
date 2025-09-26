@@ -6,6 +6,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
@@ -14,6 +15,7 @@ import com.app.dockeep.data.files.FilesRepository
 import com.app.dockeep.data.preferences.DataStoreRepository
 import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.CONTENT_PATH_KEY
+import com.app.dockeep.utils.Constants.DELETE_KEY
 import com.app.dockeep.utils.Constants.FIRST_START_KEY
 import com.app.dockeep.utils.Constants.SORT_TYPE_KEY
 import com.app.dockeep.utils.Constants.THEME_KEY
@@ -36,7 +38,11 @@ class MainViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
-    var files = mutableStateOf(listOf<DocumentItem>())
+   // var files by mutableStateOf(listOf<DocumentItem>())
+    private val files = MutableStateFlow(listOf<DocumentItem>())
+    val filess = files.asStateFlow()
+   // val theme: StateFlow<ThemeMode> = _theme.asStateFlow()
+
     var folders = mutableStateOf(listOf<Pair<String, Uri>>())
     val loading = mutableStateOf(false)
     var launched = false
@@ -45,10 +51,13 @@ class MainViewModel @Inject constructor(
     val theme: StateFlow<ThemeMode> = _theme.asStateFlow()
 
     val firstStart = mutableStateOf(true)
+    val deleteOriginal = mutableStateOf(true)
 
     init {
         getAppTheme()
         getFirstStart()
+        getDeleteOriginal()
+
         viewModelScope.launch(Dispatchers.IO) {
             getContentPathUri()?.let { uri ->
                 loadFiles(uri)
@@ -85,6 +94,16 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             prefRepo.putBool(FIRST_START_KEY, bool)
             firstStart.value = bool
+        }
+    }
+
+    fun getDeleteOriginal() =
+        runBlocking { deleteOriginal.value = prefRepo.getBool(DELETE_KEY) ?: false }
+
+    fun setDeleteOriginal(bool: Boolean) {
+        viewModelScope.launch {
+            prefRepo.putBool(DELETE_KEY, bool)
+            deleteOriginal.value = bool
         }
     }
 
@@ -131,7 +150,8 @@ class MainViewModel @Inject constructor(
         }
 
         withContext(Dispatchers.Main) {
-            files.value = fileList
+            files.value = fileList.toList()
+            println("SEARCH ")
             sortFiles(getSortType())
         }
 
@@ -154,7 +174,7 @@ class MainViewModel @Inject constructor(
             setLoading(true)
             val uris = result.data?.extractUris() ?: return@launch
             val folder = resolveFolderUri(folderUri)
-            filesRepo.copyFilesToFolder(folder, uris)
+            filesRepo.copyFilesToFolder(folder, uris, deleteOriginal.value)
             loadFiles(folder.toString())
         }
     }
@@ -168,13 +188,12 @@ class MainViewModel @Inject constructor(
                     )
                 }
                 withContext(Dispatchers.Main) {
-                    files.value = result
+                    files.value = result.toList()
                 }
 
             } else {
                 loadFiles(parent)
             }
-
         }
     }
 
@@ -198,6 +217,16 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun zipFiles(folder: String, uris: List<Uri>, name:String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            setLoading(true)
+            val root = resolveFolderUri(folder)
+            filesRepo.createArchive(root, "$name.zip",uris)
+            loadFiles(folder)
+            displayMessage("Archived successfully")
+        }
+    }
+
     fun sortFiles(type: String) {
 
         setSortType(type)
@@ -205,32 +234,32 @@ class MainViewModel @Inject constructor(
         when (type) {
             "Name A - Z" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.name.first() else "" })
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.name.first() else "" }).toList()
             }
 
             "Name Z - A" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.name.first() else "" })
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.name.first() else "" }).toList()
             }
 
             "Largest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.size else 0L })
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.size else 0L }).toList()
             }
 
             "Smallest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.size else Long.MAX_VALUE })
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.size else Long.MAX_VALUE }).toList()
             }
 
             "Newest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.date else Long.MIN_VALUE })
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.date else Long.MIN_VALUE }).toList()
             }
 
             "Oldest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.date else Long.MAX_VALUE })
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.date else Long.MAX_VALUE }).toList()
             }
         }
     }

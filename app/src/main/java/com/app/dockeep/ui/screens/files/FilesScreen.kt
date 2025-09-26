@@ -81,11 +81,12 @@ fun FilesScreen(
     var showSortSheet by remember { mutableStateOf(false) }
     var showConfirmDelete by remember { mutableStateOf(false) }
     var showMoveDialog by remember { mutableStateOf(false) }
+    var showArchiveDialog by remember { mutableStateOf(false) }
     var removeOnMove by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<DocumentItem?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
-    val filesList by mainVM.files
+    val filesList by mainVM.filess.collectAsState()
     val dirList by mainVM.folders
     val loading by mainVM.loading
     var queryString by remember {
@@ -222,6 +223,9 @@ fun FilesScreen(
                     removeOnMove = delete
                     showMoveDialog = true
                 },
+                onCompress = { files ->
+                    showArchiveDialog = true
+                }
             )
         }
 
@@ -263,7 +267,14 @@ fun FilesScreen(
             dismissMove = { showMoveDialog = false },
             dirList = dirList,
             rootUri = uri,
-            removeOnMove = removeOnMove
+            removeOnMove = removeOnMove,
+            showArchive = showArchiveDialog,
+            onArchiveConfirm = {
+                mainVM.zipFiles(uri,effectiveItems.map { it.uri }, it)
+                showArchiveDialog = false
+                resetSelectionMode()
+            },
+            dismissArchive = {showArchiveDialog = false}
         )
 
         Column(
@@ -335,6 +346,13 @@ fun FilesScreen(
                                 isInSelectionMode = true
                                 selectedItems.add(item)
                             },
+
+                        )
+                    }
+
+                    item {
+                        Spacer(
+                            modifier = Modifier.height(50.dp)
                         )
                     }
                 }

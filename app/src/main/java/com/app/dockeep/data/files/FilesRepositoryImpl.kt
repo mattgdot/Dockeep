@@ -13,7 +13,12 @@ import com.app.dockeep.model.DocumentItem
 import com.app.dockeep.utils.Constants.FILES_DIR
 import com.app.dockeep.utils.Constants.OCTET_STREAM
 import com.app.dockeep.utils.Constants.UNK
+import java.io.BufferedOutputStream
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
+import kotlin.collections.plusAssign
 
 class FilesRepositoryImpl @Inject constructor(
     private val context: Context
@@ -32,7 +37,7 @@ class FilesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun copyFilesToFolder(
-        folderUri: Uri, files: List<Uri>
+        folderUri: Uri, files: List<Uri>, delete: Boolean
     ) {
         val targetDir = DocumentFile.fromTreeUri(context, folderUri) ?: return
 
@@ -76,12 +81,19 @@ class FilesRepositoryImpl @Inject constructor(
                             }
                         }
                     }
+                    if (delete) {
+                        try {
+                            deleteDocument(uri)
+                        } catch (_: Exception) {
+
+                        }
+                    }
                 }
             } else {
                 target?.let { iuri ->
                     val nuri = createDirectory(folderUri, iuri.name!!)
                     val files = listFilesInDirectory(iuri.uri)
-                    //  if(files.isNotEmpty())
+
                     copyFilesToFolder(nuri, files.map { it.uri })
                 }
             }
@@ -172,6 +184,27 @@ class FilesRepositoryImpl @Inject constructor(
         return result
     }
 
+    override suspend fun listAllFiles(
+        dir: DocumentFile,
+        parent: String
+    ): List<Pair<String, Uri>> {
+        val result = mutableListOf<Pair<String, Uri>>()
+
+        val fileName = if (parent.isEmpty()) dir.name ?: UNK else "$parent/${dir.name ?: UNK}"
+
+        if (dir.isDirectory) {
+            result.add("$fileName/" to dir.uri)
+            dir.listFiles().forEach { child ->
+                result += listAllFiles(child, fileName)
+            }
+        } else if (dir.isFile) {
+            result.add(fileName to dir.uri)
+        }
+
+        return result
+    }
+
+
     override suspend fun renameDocument(uri: Uri, name: String) {
         DocumentsContract.renameDocument(context.contentResolver, uri, name)
     }
@@ -200,10 +233,7 @@ class FilesRepositoryImpl @Inject constructor(
 
         val files = listFilesInDirectory(targetDir.uri)
 
-        println(query)
-
         files.forEach {
-            println(it.name)
             if (it.isFolder) {
                 result += searchFiles(query, it.uri)
             } else if (it.name.lowercase().contains(query.lowercase())) {
@@ -212,5 +242,47 @@ class FilesRepositoryImpl @Inject constructor(
         }
 
         return result
+    }
+
+    override suspend fun createArchive(
+        root: Uri,
+        name: String,
+        files: List<Uri>
+    ) {
+        val inputDirectory = DocumentFile.fromTreeUri(context, root) ?: return
+
+        val outputZipFile = inputDirectory.createFile("application/zip", name)
+
+        val fileList = mutableListOf<Pair<String, Uri>>()
+        files.forEach {
+            val item = DocumentFile.fromTreeUri(context, it)!!
+            if(item.isDirectory) fileList += listAllFiles(item)
+            else fileList.add(item.name!! to item.uri)
+        }
+
+        println(fileList)
+
+        if (outputZipFile != null) {
+            context.contentResolver.openOutputStream(outputZipFile.uri).use { of ->
+                if (of != null) {
+                    ZipOutputStream(BufferedOutputStream(of)).use { zos ->
+                        fileList.forEach { file ->
+                            val zipFileName = file.first
+                            val entry = ZipEntry(zipFileName)
+                            zos.putNextEntry(entry)
+                            val inpFile = DocumentFile.fromSingleUri(context, file.second)
+                            inpFile?.isDirectory?.let {
+                                if (!it) {
+                                    context.contentResolver.openInputStream(inpFile.uri)
+                                        .use { ifs ->
+                                            ifs?.copyTo(zos)
+                                        }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

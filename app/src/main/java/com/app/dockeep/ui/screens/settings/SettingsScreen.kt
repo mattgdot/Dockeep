@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Lock
@@ -26,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -54,6 +56,7 @@ fun SettingsScreen(
 ) {
     val mainVM: MainViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
     val theme by mainVM.theme.collectAsState()
+    var deleteOrig by mainVM.deleteOriginal
 
     val contentPathLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -91,91 +94,97 @@ fun SettingsScreen(
                         .padding(top = 15.dp)
                 ) {
 
-                    ListItem(headlineContent = {
-                        Text(text = "Save location")
-                    }, leadingContent = {
-                        Icon(Icons.Outlined.Folder, contentDescription = null)
-                    }, modifier = Modifier.clickable {
-                        contentPathLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
-                    })
+                    ListItem(
+                        headlineContent = { Text(text = "Save location") },
+                        supportingContent = { Text("Choose where imported files will be stored") },
+                        leadingContent = { Icon(Icons.Outlined.Folder, contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            contentPathLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                        })
 
-                    ListItem(headlineContent = {
-                        Text(text = "App Theme")
-                    }, leadingContent = {
-                        Icon(Icons.Outlined.Settings, contentDescription = null)
-                    }, modifier = Modifier.clickable {
-                        openThemeDialog = true
-                    })
+                    ListItem(
+                        headlineContent = { Text(text = "Delete originals") },
+                        supportingContent = { Text("Remove source files after they are imported") },
+                        trailingContent = {
+                            Switch(
+                                checked = deleteOrig,
+                                onCheckedChange = { checked -> mainVM.setDeleteOriginal(checked) })
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Delete, contentDescription = null) })
 
-                    ListItem(headlineContent = {
-                        Text(text = "Share App")
-                    }, leadingContent = {
-                        Icon(Icons.Outlined.Share, contentDescription = null)
-                    }, modifier = Modifier.clickable {
-                        val sendIntent: Intent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(
-                                Intent.EXTRA_TEXT, "https://github.com/mattgdot/Dockeep"
+                    ListItem(
+                        headlineContent = { Text(text = "App theme") },
+                        supportingContent = { Text("Switch between light, dark, or system default") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Outlined.Settings, contentDescription = null
                             )
-                            type = "text/plain"
-                        }
+                        },
+                        modifier = Modifier.clickable { openThemeDialog = true })
 
-                        val shareIntent = Intent.createChooser(sendIntent, null)
-                        try {
-                            context.startActivity(shareIntent)
-                        } catch (_: Exception) {
-                            Toast.makeText(
-                                context, "Can't open link", Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    })
+                    ListItem(
+                        headlineContent = { Text(text = "Share app") },
+                        supportingContent = { Text("Let others know about Dockeep") },
+                        leadingContent = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "https://github.com/mattgdot/Dockeep")
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, null)
+                            try {
+                                context.startActivity(shareIntent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Can't open link", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        })
 
+                    ListItem(
+                        headlineContent = { Text(text = "Contact developer") },
+                        supportingContent = { Text("Send feedback, report issues, or ask questions") },
+                        leadingContent = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            val emailIntent = Intent(
+                                Intent.ACTION_SENDTO, "mailto:decosoftapps@gmail.com".toUri()
+                            )
+                            try {
+                                context.startActivity(emailIntent)
+                            } catch (_: ActivityNotFoundException) {
+                                Toast.makeText(context, "Can't open", Toast.LENGTH_SHORT).show()
+                            }
+                        })
 
-                    ListItem(headlineContent = {
-                        Text(text = "Contact Developer")
-                    }, leadingContent = {
-                        Icon(Icons.Outlined.Email, contentDescription = null)
-                    }, modifier = Modifier.clickable {
-                        val emailIntent = Intent(
-                            Intent.ACTION_SENDTO, "mailto:decosoftapps@gmail.com".toUri()
-                        )
-                        try {
-                            context.startActivity(emailIntent)
-                        } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(
-                                context, "Can't open", Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    })
+                    ListItem(
+                        headlineContent = { Text(text = "Terms & Conditions") },
+                        supportingContent = { Text("Read the legal terms for using Dockeep") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Outlined.VerifiedUser, contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            try {
+                                uriHandler.openUri("https://github.com/mattgdot/Dockeep/blob/main/terms_conditions.md")
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Can't open link", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        })
 
-                    ListItem(headlineContent = {
-                        Text(text = "Terms & Conditions")
-                    }, leadingContent = {
-                        Icon(Icons.Outlined.VerifiedUser, contentDescription = null)
-                    }, modifier = Modifier.clickable {
-                        try {
-                            uriHandler.openUri("https://github.com/mattgdot/Dockeep/blob/main/terms_conditions.md")
-                        } catch (_: Exception) {
-                            Toast.makeText(
-                                context, "Can't open link", Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    })
-
-                    ListItem(headlineContent = {
-                        Text(text = "Privacy Policy")
-                    }, leadingContent = {
-                        Icon(Icons.Outlined.Lock, contentDescription = null)
-                    }, modifier = Modifier.clickable {
-                        try {
-                            uriHandler.openUri("https://github.com/mattgdot/Dockeep/blob/main/privacy_policy.md")
-                        } catch (_: Exception) {
-                            Toast.makeText(
-                                context, "Can't open link", Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    })
-
+                    ListItem(
+                        headlineContent = { Text(text = "Privacy Policy") },
+                        supportingContent = { Text("Learn how your data is collected and used") },
+                        leadingContent = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            try {
+                                uriHandler.openUri("https://github.com/mattgdot/Dockeep/blob/main/privacy_policy.md")
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Can't open link", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        })
                 }
             }
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.OpenWith
@@ -22,7 +23,8 @@ fun OptionsBottomSheet(
     onShare: (List<DocumentItem>) -> Unit,
     onDelete: (List<DocumentItem>) -> Unit,
     onRename: (DocumentItem) -> Unit,
-    onMove: (List<DocumentItem>, Boolean) -> Unit
+    onMove: (List<DocumentItem>, Boolean) -> Unit,
+    onCompress:(List<DocumentItem>) -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss
@@ -57,6 +59,10 @@ fun OptionsBottomSheet(
             }
             OptionsListItem("Delete", Icons.Outlined.Delete) {
                 onDelete(items)
+                onDismiss()
+            }
+            OptionsListItem("Compress", Icons.Outlined.Compress) {
+                onCompress(items)
                 onDismiss()
             }
         }
