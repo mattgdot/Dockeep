@@ -1,5 +1,3 @@
-Dockeep – Your Pocket for Files
-
 Tired of losing track of important files on your phone? PDFs, ID copies, class notes, or anything shared with you often get buried in Downloads, WhatsApp or email attachments. 
 I built this app as a student who wanted a simple, private way to keep everything organized and easy to access.
 
