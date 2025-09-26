@@ -16,8 +16,8 @@ android {
         applicationId = "com.app.dockeep"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1-beta"
+        versionCode = 4
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -86,6 +86,6 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.biometric)
+   // implementation(libs.biometric)
     implementation(libs.foundation.pager)
 }
