@@ -5,8 +5,13 @@ A simple, open-source Android app to keep your important files organized and eas
 
 It’s free, open-source, and still early, but I’m happy to keep improving it if there’s interest. Contributions, feedback, and feature suggestions are welcome!
 
-<h2>Download beta</h2>  
+<h2>Download</h2>  
 <a href="https://github.com/mattgdot/dockeep/releases"><img src="https://raw.githubusercontent.com/NeoApplications/Neo-Backup/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png" width="200"></a> 
+<a href="https://f-droid.org/packages/com.app.dockeep">
+    <img src="https://f-droid.org/badge/get-it-on.png"
+    alt="Get it on F-Droid"
+    height="77">
+</a>
 
 ## Features
 - Share files from any app directly into your own folders
