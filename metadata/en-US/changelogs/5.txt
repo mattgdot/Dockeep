@@ -1,0 +1,3 @@
+- Compress files in a ZIP archive
+- Remove source files after import
+- Bug fixes and improvements
