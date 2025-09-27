@@ -78,7 +78,7 @@ fun FileListItem(
                         )
                     } else {
                         var ext = item.mimeType.substringAfter("/")
-                        if(ext.length > 5 || ext.isEmpty()) ext = item.name.substringAfter(".")
+                        if(ext.length > 5 || ext.isEmpty()) ext = item.name.substringAfterLast(".")
                         Text(
                             text = ext,
                             color = MaterialTheme.colorScheme.onSurface,

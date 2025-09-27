@@ -63,6 +63,15 @@ fun Dialogs(
         )
     }
 
+    if (showRename) {
+        TextInputDialog(
+            title = "Rename",
+            initialText = effectiveItems[0].name,
+            onDismiss = dismissRename,
+            onConfirm = onConfirmRename,
+        )
+    }
+
     if (showMove) {
         val dirsFiltered = dirList.filterNot { fu ->
             fu.second.toString() == rootUri || effectiveItems.any {

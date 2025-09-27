@@ -2,11 +2,13 @@ package com.app.dockeep.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.application
 import com.app.dockeep.ui.MainViewModel
 import com.app.dockeep.ui.components.SelectFolderDialog
 import com.app.dockeep.ui.theme.DockeepTheme
@@ -33,6 +35,7 @@ class ShareReceiverActivity : ComponentActivity() {
                                 intent.action == Intent.ACTION_SEND_MULTIPLE
                             ) {
                                 mainVM.importFiles(intent.extractUris(), folderUri)
+                                Toast.makeText(application, "Done", Toast.LENGTH_SHORT).show()
                                 finish()
                             }
                         }

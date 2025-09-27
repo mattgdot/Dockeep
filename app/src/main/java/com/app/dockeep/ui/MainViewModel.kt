@@ -234,32 +234,32 @@ class MainViewModel @Inject constructor(
         when (type) {
             "Name A - Z" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.name.first() else "" }).toList()
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { it.name.lowercase() }).toList()
             }
 
             "Name Z - A" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.name.first() else "" }).toList()
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { it.name.lowercase() }).toList()
             }
 
             "Largest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.size else 0L }).toList()
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { it.size  }).toList()
             }
 
             "Smallest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.size else Long.MAX_VALUE }).toList()
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { it.size  }).toList()
             }
 
             "Newest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending { if (!it.isFolder) it.date else Long.MIN_VALUE }).toList()
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenByDescending {  it.date  }).toList()
             }
 
             "Oldest first" -> {
                 files.value =
-                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { if (!it.isFolder) it.date else Long.MAX_VALUE }).toList()
+                    files.value.sortedWith(compareByDescending<DocumentItem> { it.isFolder }.thenBy { it.date }).toList()
             }
         }
     }
@@ -293,8 +293,6 @@ class MainViewModel @Inject constructor(
 
             if (load) loadFiles(folderUri)
             if (remove) loadFiles(src.toString())
-
-            displayMessage("Done")
         }
     }
 }
